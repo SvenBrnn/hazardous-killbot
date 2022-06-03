@@ -1,0 +1,29 @@
+{
+  "name": "s-connect-metrics-exporter",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@discordjs/builders": "^0.13.0",
+    "@discordjs/rest": "^0.4.1",
+    "discord-api-types": "^0.33.2",
+    "discord.js": "^13.7.0",
+    "ws": "^8.7.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.27.0",
+    "@typescript-eslint/parser": "^5.27.0",
+    "eslint": "^7",
+    "eslint-plugin-import": "^2.26.0",
+    "nodemon": "^2.0.12",
+    "typescript": "^4.4.3"
+  },
+  "package": {
+    "install": "package.json"
+  },
+  "scripts": {
+    "start": "cd dist && node index",
+    "build": "yarn eslint . && ./node_modules/typescript/bin/tsc",
+    "start.dev": "yarn && nodemon --ignore ./dist -e ts,twig,html,jpg,png,gif,svg,json --exec \"(yarn eslint . && ./node_modules/typescript/bin/tsc && cd dist && node index) || exit 1\""
+  }
+}

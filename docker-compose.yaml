@@ -1,0 +1,17 @@
+version: '3.6'
+services:
+  discordbot:
+    build:
+      context: docker/nodejs/docker-dev
+      dockerfile: Dockerfile
+    image: nodejs-dev:16-alpine
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+    volumes:
+      - ./src:/usr/src/app:delegated
+
+networks:
+  default:
+    name: bot-network
+    driver: bridge
