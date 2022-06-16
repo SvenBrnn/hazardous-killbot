@@ -1,8 +1,11 @@
 # hazardous-killbot
 [Invite the Bot to your Server!](https://discord.com/api/oauth2/authorize?client_id=981835348030160948&permissions=274877925376&scope=bot%20applications.commands)
+
 User: Hazardous-Killbot#1916
 
 Posts EvE-Online Killmails von zkillboard.com to a discord channel using the zkillboard webhook endpoint and discord.js
+
+[Join Our Discord](https://discord.gg/ACCRMvPGSf)
 
 The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/), ISK donations are always welcome if you like my work ;)
 
