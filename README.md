@@ -4,6 +4,8 @@ User: Hazardous-Killbot#1916
 
 Posts EvE-Online Killmails von zkillboard.com to a discord channel using the zkillboard webhook endpoint and discord.js
 
+The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/), ISK donations are always welcome if you like my work ;)
+
 ## Commands
 
 | key                                            | description                                                                                     |
@@ -16,6 +18,11 @@ Posts EvE-Online Killmails von zkillboard.com to a discord channel using the zki
 | /zkill-unsubscribe alliance [id]               | Make the bot not post any kills for alliance [id] anymore                                       |
 | /zkill-unsubscribe corperation [id]            | Make the bot not post any kills for character [id] anymore                                      |
 | /zkill-unsubscribe public                      | Make the bot not post any kills of the ublic feed anymore                                       |
+
+Where to find the id?
+![](./docs/id.png)
+
+Open your corp/char/alliance page on zkillboard and copy the number at the end of the link.
 
 ## Develop
 
@@ -47,3 +54,16 @@ Posts EvE-Online Killmails von zkillboard.com to a discord channel using the zki
 |----------------------|------------------------------------|
 | DISCORD_BOT_TOKEN    | Your discord bot token             |
 | DISCORD_CLIENT_ID    | Your discord application client id |
+
+## Known issues
+
+- Subscribing to a character/corp/alliance in the same channel can lead to duplicate posting of killmails, E.g.: when the character is in the respectiv corp/alliance it will post the mail once for the corp and once for the alliance
+
+## Licence 
+Copyright 2022 SvenBrnn
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
