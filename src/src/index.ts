@@ -3,6 +3,8 @@ import { Client, Intents } from 'discord.js';
 import {registerCommands} from './commands/deployCommands';
 import {ZKillSubscriber} from './zKillSubscriber';
 
+process.setMaxListeners(100);
+
 // Create a new client instance
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 

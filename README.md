@@ -58,10 +58,6 @@ Open your corp/char/alliance page on zkillboard and copy the number at the end o
 | DISCORD_BOT_TOKEN    | Your discord bot token             |
 | DISCORD_CLIENT_ID    | Your discord application client id |
 
-## Known issues
-
-- Subscribing to a character/corp/alliance in the same channel can lead to duplicate posting of killmails, E.g.: when the character is in the respectiv corp/alliance it will post the mail once for the corp and once for the alliance
-
 ## Licence 
 Copyright 2022 SvenBrnn
 

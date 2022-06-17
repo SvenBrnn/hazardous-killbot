@@ -1,6 +1,8 @@
-import {Client, TextChannel} from 'discord.js';
+import {Client, DiscordAPIError, TextChannel} from 'discord.js';
 import {MessageEvent, WebSocket} from 'ws';
 import {REST} from '@discordjs/rest';
+import AsyncLock from 'async-lock';
+import MemoryCache from 'memory-cache';
 import * as fs from 'fs';
 
 export enum SubscriptionType {
@@ -32,7 +34,10 @@ export class ZKillSubscriber {
     protected subscriptions: Map<string, SubscriptionGuild>;
     protected rest: REST;
 
+    protected asyncLock: AsyncLock;
+
     protected constructor(client: Client) {
+        this.asyncLock = new AsyncLock();
         this.subscriptions = new Map<string, SubscriptionGuild>();
         this.loadConfig();
 
@@ -56,16 +61,16 @@ export class ZKillSubscriber {
     protected async onMessage (event: MessageEvent) {
         const data = JSON.parse(event.data.toString());
         //console.log(data);
-        this.subscriptions.forEach((guild) => {
+        this.subscriptions.forEach((guild, guildId) => {
             guild.channels.forEach((channel, channelId) => {
-                channel.subscriptions.forEach(async subscription => {
+                channel.subscriptions.forEach(async (subscription) => {
                     let requireSend = false;
                     if(subscription.minValue > data.zkb.totalValue) {
                         return; // Do not send if below the min value
                     }
                     switch (subscription.subType) {
                     case SubscriptionType.PUBLIC:
-                        await this.sendKill(channelId, data);
+                        await this.sendKill(guildId, channelId, subscription.subType, data);
                         break;
                     case SubscriptionType.ALLIANCE:
                         if (data.victim.alliance_id === subscription.id) {
@@ -80,7 +85,7 @@ export class ZKillSubscriber {
                             }
                         }
                         if(requireSend) {
-                            await this.sendKill(channelId, data);
+                            await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
                         }
                         break;
                     case SubscriptionType.CORPERATION:
@@ -96,7 +101,7 @@ export class ZKillSubscriber {
                             }
                         }
                         if(requireSend) {
-                            await this.sendKill(channelId, data);
+                            await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
                         }
                         break;
                     case SubscriptionType.CHARACTER:
@@ -112,7 +117,7 @@ export class ZKillSubscriber {
                             }
                         }
                         if(requireSend) {
-                            await this.sendKill(channelId, data);
+                            await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
                         }
                         break;
                     default:
@@ -122,16 +127,49 @@ export class ZKillSubscriber {
         });
     }
 
-    private async sendKill(channelId:string, data:any) {
-        const c = <TextChannel>await this.doClient.channels.cache.get(channelId);
-        try {
-            c.send({
-                content: data.zkb.url
+    private async sendKill(guildId: string, channelId:string, subType: SubscriptionType, data:any, subId?: number) {
+        await this.asyncLock.acquire('sendKill', async (done) => {
+            const cache = MemoryCache.get(`${channelId}_${data.killmail_id}`);
+            // Mail was already send, prevent from sending twice
+            if(cache) {
+                done();
+                return;
             }
-            );
-        } catch (e) {
-            console.log(e);
-        }
+            const c = <TextChannel>await this.doClient.channels.cache.get(channelId);
+            if(c) {
+                try {
+                    await c.send(
+                        {
+                            content: data.zkb.url
+                        }
+                    );
+                    MemoryCache.put(`${channelId}_${data.killmail_id}`, 'send', 60000); // Prevent from sending again, cache it for 1 min
+                } catch (e) {
+                    if (e instanceof DiscordAPIError && e.httpStatus === 403) {
+                        try {
+                            const owner = await c.guild.fetchOwner();
+                            await owner.send(`The bot unsubscribed from channel ${c.name} on ${c.guild.name} because it was not able to write in it! Fix the permissions and subscribe again!`);
+                            console.log(`Sent message to owner of ${c.guild.name} to notify him/her about the permission problem.`);
+                        } catch (e) {
+                            console.log(e);
+                        }
+                        const subscriptionsInChannel = this.subscriptions.get(guildId)?.channels.get(channelId);
+                        if(subscriptionsInChannel) {
+                            // Unsubscribe all events from channel
+                            subscriptionsInChannel.subscriptions.forEach((subscription) => {
+                                this.unsubscribe(subscription.subType, guildId, channelId, subscription.id);
+                            });
+                        }
+                    } else {
+                        console.log(e);
+                    }
+                }
+            } else {
+                await this.unsubscribe(subType, guildId, channelId, subId);
+            }
+            done();
+        });
+
     }
 
     public static getInstance(client?: Client) {
