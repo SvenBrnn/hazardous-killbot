@@ -32,11 +32,11 @@ export class SubscribeCommand extends AbstractCommand {
             .setDescription('Subscribe to zkill');
 
 
-        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('corperation')
-            .setDescription('Subscribe corperation to channel')
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('corporation')
+            .setDescription('Subscribe corporation to channel')
             .addNumberOption(option =>
                 option.setName('id')
-                    .setDescription('ID for the Corperation')
+                    .setDescription('ID for the corporation')
                     .setRequired(true)
             )
             .addNumberOption(option =>
@@ -63,6 +63,48 @@ export class SubscribeCommand extends AbstractCommand {
             .addNumberOption(option =>
                 option.setName('id')
                     .setDescription('ID for the character')
+                    .setRequired(true)
+
+            )
+            .addNumberOption(option =>
+                option.setName('min-value')
+                    .setDescription('Minimum isk to show the entry')
+                    .setRequired(false)
+            ));
+
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('region')
+            .setDescription('Subscribe character to channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the region')
+                    .setRequired(true)
+
+            )
+            .addNumberOption(option =>
+                option.setName('min-value')
+                    .setDescription('Minimum isk to show the entry')
+                    .setRequired(false)
+            ));
+
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('constellation')
+            .setDescription('Subscribe character to channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the constellation')
+                    .setRequired(true)
+
+            )
+            .addNumberOption(option =>
+                option.setName('min-value')
+                    .setDescription('Minimum isk to show the entry')
+                    .setRequired(false)
+            ));
+
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('system')
+            .setDescription('Subscribe character to channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the system')
                     .setRequired(true)
 
             )

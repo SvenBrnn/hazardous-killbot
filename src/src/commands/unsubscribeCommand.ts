@@ -23,11 +23,11 @@ export class UnsubscribeCommand extends AbstractCommand {
             .setDescription('Unsubscribe from zkill');
 
 
-        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('corperation')
-            .setDescription('Unsubscribe corperation to channel')
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('corporation')
+            .setDescription('Unsubscribe corporation to channel')
             .addNumberOption(option =>
                 option.setName('id')
-                    .setDescription('ID for the Corperation')
+                    .setDescription('ID for the corporation')
                     .setRequired(true)
             ));
 
@@ -49,6 +49,9 @@ export class UnsubscribeCommand extends AbstractCommand {
 
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('public')
             .setDescription('Unsubscribe public feed from channel'));
+
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('all')
+            .setDescription('Unsubscribe everything from channel'));
 
         return slashCommand;
 

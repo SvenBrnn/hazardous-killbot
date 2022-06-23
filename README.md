@@ -11,16 +11,23 @@ The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/)
 
 ## Commands
 
-| key                                            | description                                                                                     |
-|------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| /zkill-subscribe corperation [id] ([min-vaue]) | Make bot post kills of corperation with id [id] ([min-value] is optional minimal amout of isk)  |
-| /zkill-subscribe alliance [id] ([min-vaue])    | Make bot post kills of alliance with id [id] ([min-value] is optional minimal amout of isk)     |
-| /zkill-subscribe character [id] ([min-vaue])   | Make bot post kills of character with id [id] ([min-value] is optional minimal amout of isk)    |
-| /zkill-subscribe public ([min-vaue])           | Make bot post kills the public feed ([min-value] is optional minimal amout of isk)              |
-| /zkill-unsubscribe corperation [id]            | Make the bot not post any kills for corperation [id] anymore                                    |
-| /zkill-unsubscribe alliance [id]               | Make the bot not post any kills for alliance [id] anymore                                       |
-| /zkill-unsubscribe corperation [id]            | Make the bot not post any kills for character [id] anymore                                      |
-| /zkill-unsubscribe public                      | Make the bot not post any kills of the ublic feed anymore                                       |
+| key                                              | description                                                                                      |
+|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| /zkill-subscribe corporation [id] ([min-vaue])   | Make bot post kills of corporation with id [id] ([min-value] is optional minimal amout of isk)   |
+| /zkill-subscribe alliance [id] ([min-vaue])      | Make bot post kills of alliance with id [id] ([min-value] is optional minimal amout of isk)      |
+| /zkill-subscribe character [id] ([min-vaue])     | Make bot post kills of character with id [id] ([min-value] is optional minimal amout of isk)     |
+| /zkill-subscribe region [id] ([min-vaue])        | Make bot post kills of region with id [id] ([min-value] is optional minimal amout of isk)        |
+| /zkill-subscribe constellation [id] ([min-vaue]) | Make bot post kills of constellation with id [id] ([min-value] is optional minimal amout of isk) |
+| /zkill-subscribe system [id] ([min-vaue])        | Make bot post kills of system with id [id] ([min-value] is optional minimal amout of isk)        |
+| /zkill-subscribe public ([min-vaue])             | Make bot post kills the public feed ([min-value] is optional minimal amout of isk)               |
+| /zkill-unsubscribe corporation [id]              | Make the bot not post any kills for corporation [id] anymore                                     |
+| /zkill-unsubscribe alliance [id]                 | Make the bot not post any kills for alliance [id] anymore                                        |
+| /zkill-unsubscribe corporation [id]              | Make the bot not post any kills for character [id] anymore                                       |
+| /zkill-unsubscribe region [id]                   | Make the bot not post any kills for region [id] anymore                                          |
+| /zkill-unsubscribe constellation [id]            | Make the bot not post any kills for constellation [id] anymore                                   |
+| /zkill-unsubscribe system [id]                   | Make the bot not post any kills for system [id] anymore                                          |
+| /zkill-unsubscribe public                        | Make the bot not post any kills of the public feed anymore                                       |
+| /zkill-unsubscribe all                           | Make the bot not post any on this channel anymore                                                |
 
 Where to find the id?
 ![](./docs/id.png)

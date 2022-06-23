@@ -4,10 +4,15 @@ import {REST} from '@discordjs/rest';
 import AsyncLock from 'async-lock';
 import MemoryCache from 'memory-cache';
 import * as fs from 'fs';
+import {EsiClient} from './lib/esiClient';
 
 export enum SubscriptionType {
+    ALL = 'all',
     PUBLIC = 'public',
-    CORPERATION = 'corperation',
+    REGION = 'region',
+    CONSTELLATION = 'constellation',
+    SYSTEM = 'system',
+    corporation = 'corporation',
     ALLIANCE = 'alliance',
     CHARACTER = 'character'
 }
@@ -26,20 +31,33 @@ interface Subscription {
     minValue: number
 }
 
+export interface SolarSystem {
+    id: number
+    regionId: number
+    regionName: string
+    constellationId: number
+    constellationName: string
+}
+
 export class ZKillSubscriber {
     protected static instance : ZKillSubscriber;
     protected doClient: Client;
     protected websocket: WebSocket;
 
     protected subscriptions: Map<string, SubscriptionGuild>;
+    protected systems: Map<number, SolarSystem>;
     protected rest: REST;
 
     protected asyncLock: AsyncLock;
+    protected esiClient: EsiClient;
 
     protected constructor(client: Client) {
         this.asyncLock = new AsyncLock();
+        this.esiClient = new EsiClient();
         this.subscriptions = new Map<string, SubscriptionGuild>();
+        this.systems = new Map<number, SolarSystem>();
         this.loadConfig();
+        this.loadSystems();
 
         this.doClient = client;
         this.rest = new REST({ version: '9' }).setToken(process.env.DISCORD_BOT_TOKEN || '');
@@ -60,67 +78,87 @@ export class ZKillSubscriber {
 
     protected async onMessage (event: MessageEvent) {
         const data = JSON.parse(event.data.toString());
-        //console.log(data);
         this.subscriptions.forEach((guild, guildId) => {
             guild.channels.forEach((channel, channelId) => {
                 channel.subscriptions.forEach(async (subscription) => {
-                    let requireSend = false;
-                    if(subscription.minValue > data.zkb.totalValue) {
-                        return; // Do not send if below the min value
-                    }
-                    switch (subscription.subType) {
-                    case SubscriptionType.PUBLIC:
-                        await this.sendKill(guildId, channelId, subscription.subType, data);
-                        break;
-                    case SubscriptionType.ALLIANCE:
-                        if (data.victim.alliance_id === subscription.id) {
-                            requireSend = true;
+                    try {
+                        let requireSend = false, systemData = null;
+                        if (subscription.minValue > data.zkb.totalValue) {
+                            return; // Do not send if below the min value
                         }
-                        if(!requireSend) {
-                            for(const attacker of data.attackers) {
-                                if(attacker.alliance_id === subscription.id) {
-                                    requireSend = true;
-                                    break;
+                        switch (subscription.subType) {
+                        case SubscriptionType.PUBLIC:
+                            await this.sendKill(guildId, channelId, subscription.subType, data);
+                            break;
+                        case SubscriptionType.REGION:
+                            systemData = await this.getSystemData(data.solar_system_id);
+                            if (systemData.regionId === subscription.id) {
+                                await this.sendKill(guildId, channelId, subscription.subType, data);
+                            }
+                            break;
+                        case SubscriptionType.CONSTELLATION:
+                            systemData = await this.getSystemData(data.solar_system_id);
+                            if (systemData.constellationId === subscription.id) {
+                                await this.sendKill(guildId, channelId, subscription.subType, data);
+                            }
+                            break;
+                        case SubscriptionType.SYSTEM:
+                            if (data.solar_system_id === subscription.id) {
+                                await this.sendKill(guildId, channelId, subscription.subType, data);
+                            }
+                            break;
+                        case SubscriptionType.ALLIANCE:
+                            if (data.victim.alliance_id === subscription.id) {
+                                requireSend = true;
+                            }
+                            if (!requireSend) {
+                                for (const attacker of data.attackers) {
+                                    if (attacker.alliance_id === subscription.id) {
+                                        requireSend = true;
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        if(requireSend) {
-                            await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
-                        }
-                        break;
-                    case SubscriptionType.CORPERATION:
-                        if (data.victim.corporation_id === subscription.id) {
-                            requireSend = true;
-                        }
-                        if(!requireSend) {
-                            for(const attacker of data.attackers) {
-                                if(attacker.corporation_id === subscription.id) {
-                                    requireSend = true;
-                                    break;
+                            if (requireSend) {
+                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
+                            }
+                            break;
+                        case SubscriptionType.corporation:
+                            if (data.victim.corporation_id === subscription.id) {
+                                requireSend = true;
+                            }
+                            if (!requireSend) {
+                                for (const attacker of data.attackers) {
+                                    if (attacker.corporation_id === subscription.id) {
+                                        requireSend = true;
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        if(requireSend) {
-                            await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
-                        }
-                        break;
-                    case SubscriptionType.CHARACTER:
-                        if (data.victim.character_id === subscription.id) {
-                            requireSend = true;
-                        }
-                        if(!requireSend) {
-                            for(const attacker of data.attackers) {
-                                if(attacker.character_id === subscription.id) {
-                                    requireSend = true;
-                                    break;
+                            if (requireSend) {
+                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
+                            }
+                            break;
+                        case SubscriptionType.CHARACTER:
+                            if (data.victim.character_id === subscription.id) {
+                                requireSend = true;
+                            }
+                            if (!requireSend) {
+                                for (const attacker of data.attackers) {
+                                    if (attacker.character_id === subscription.id) {
+                                        requireSend = true;
+                                        break;
+                                    }
                                 }
                             }
+                            if (requireSend) {
+                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
+                            }
+                            break;
+                        default:
                         }
-                        if(requireSend) {
-                            await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
-                        }
-                        break;
-                    default:
+                    } catch (e) {
+                        console.log(e);
                     }
                 });
             });
@@ -206,6 +244,12 @@ export class ZKillSubscriber {
         if(!guild?.channels.has(channel)) {
             return;
         }
+        // If unsubscribe all is triggered
+        if(subType === SubscriptionType.ALL) {
+            !guild?.channels.delete(channel);
+            fs.writeFileSync('./config/' + guildId + '.json', JSON.stringify(this.generateObject(guild)), 'utf8');
+            return;
+        }
         const guildChannel = guild.channels.get(channel);
         const ident = `${subType}${id?id:''}`;
         if(!guildChannel?.subscriptions.has(ident)) {
@@ -243,7 +287,7 @@ export class ZKillSubscriber {
     private loadConfig() {
         const files = fs.readdirSync('./config', {withFileTypes: true});
         for (const file of files) {
-            if(file.name.match(/\.json$/)) {
+            if(file.name.match(/\d+\.json$/)) {
                 const guildId = file.name.match(/(\d*)\.json$/);
                 if(guildId && guildId.length > 0 && guildId[0]) {
                     const fileContent = fs.readFileSync('./config/' + file.name, 'utf8');
@@ -269,5 +313,29 @@ export class ZKillSubscriber {
             map.set(key, object[key]);
         }
         return map;
+    }
+
+    private async getSystemData(systemId: number): Promise<SolarSystem> {
+        return await this.asyncLock.acquire('fetchSystem', async (done) => {
+
+            let system = this.systems.get(systemId);
+            if (system) {
+                done(undefined, system);
+                return;
+            }
+            system = await this.esiClient.getSystemInfo(systemId);
+            this.systems.set(systemId, system);
+            fs.writeFileSync('./config/systems.json', JSON.stringify(Object.fromEntries(this.systems)), 'utf8');
+
+            done(undefined, system);
+        });
+    }
+
+    private loadSystems() {
+        const fileContent = fs.readFileSync('./config/systems.json', 'utf8');
+        const data = JSON.parse(fileContent);
+        for(const key in data) {
+            this.systems.set(Number.parseInt(key), data[key] as SolarSystem);
+        }
     }
 }
