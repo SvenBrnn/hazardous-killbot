@@ -332,10 +332,12 @@ export class ZKillSubscriber {
     }
 
     private loadSystems() {
-        const fileContent = fs.readFileSync('./config/systems.json', 'utf8');
-        const data = JSON.parse(fileContent);
-        for(const key in data) {
-            this.systems.set(Number.parseInt(key), data[key] as SolarSystem);
+        if(fs.existsSync('./config/systems.json')) {
+            const fileContent = fs.readFileSync('./config/systems.json', 'utf8');
+            const data = JSON.parse(fileContent);
+            for (const key in data) {
+                this.systems.set(Number.parseInt(key), data[key] as SolarSystem);
+            }
         }
     }
 }
