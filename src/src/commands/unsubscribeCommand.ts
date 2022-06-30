@@ -15,7 +15,10 @@ export class UnsubscribeCommand extends AbstractCommand {
         const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
         const id = interaction.options.getNumber('id', false);
         sub.unsubscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined);
-        interaction.reply('We unscubscribed to zkillboard channel: ' + interaction.options.getSubcommand() + ' ' + interaction.options.getNumber('id'));
+        interaction.reply({
+            content: 'We unscubscribed to zkillboard channel: ' + interaction.options.getSubcommand() + ' ' + interaction.options.getNumber('id'),
+            ephemeral: true
+        });
     }
 
     getCommand(): SlashCommandBuilder {

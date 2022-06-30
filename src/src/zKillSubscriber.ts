@@ -1,8 +1,9 @@
-import {Client, DiscordAPIError, TextChannel} from 'discord.js';
+import {Client, ColorResolvable, DiscordAPIError, MessageOptions, TextChannel} from 'discord.js';
 import {MessageEvent, WebSocket} from 'ws';
 import {REST} from '@discordjs/rest';
 import AsyncLock from 'async-lock';
 import MemoryCache from 'memory-cache';
+import ogs from 'open-graph-scraper';
 import * as fs from 'fs';
 import {EsiClient} from './lib/esiClient';
 
@@ -17,6 +18,13 @@ export enum SubscriptionType {
     CHARACTER = 'character'
 }
 
+export enum LimitType {
+    REGION = 'region',
+    CONSTELLATION = 'constellation',
+    SYSTEM = 'system',
+    NONE = 'none'
+}
+
 interface SubscriptionGuild {
     channels: Map<string, SubscriptionChannel>
 }
@@ -28,7 +36,9 @@ interface SubscriptionChannel {
 interface Subscription {
     subType: SubscriptionType
     id?: number
-    minValue: number
+    minValue: number,
+    limitType: LimitType
+    limitIds?: string
 }
 
 export interface SolarSystem {
@@ -81,6 +91,7 @@ export class ZKillSubscriber {
         this.subscriptions.forEach((guild, guildId) => {
             guild.channels.forEach((channel, channelId) => {
                 channel.subscriptions.forEach(async (subscription) => {
+                    let color : ColorResolvable = 'GREEN';
                     try {
                         let requireSend = false, systemData = null;
                         if (subscription.minValue > data.zkb.totalValue) {
@@ -110,6 +121,7 @@ export class ZKillSubscriber {
                         case SubscriptionType.ALLIANCE:
                             if (data.victim.alliance_id === subscription.id) {
                                 requireSend = true;
+                                color = 'RED';
                             }
                             if (!requireSend) {
                                 for (const attacker of data.attackers) {
@@ -120,12 +132,17 @@ export class ZKillSubscriber {
                                 }
                             }
                             if (requireSend) {
-                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
+                                if(subscription.limitType !== LimitType.NONE && !await this.isInLimit(subscription, data.solar_system_id)) {
+                                    console.log(data.solar_system_id + ' filtered for subscription');
+                                    return;
+                                }
+                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
                             }
                             break;
                         case SubscriptionType.corporation:
                             if (data.victim.corporation_id === subscription.id) {
                                 requireSend = true;
+                                color = 'RED';
                             }
                             if (!requireSend) {
                                 for (const attacker of data.attackers) {
@@ -136,12 +153,16 @@ export class ZKillSubscriber {
                                 }
                             }
                             if (requireSend) {
-                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
+                                if(subscription.limitType !== LimitType.NONE && !await this.isInLimit(subscription, data.solar_system_id)) {
+                                    return;
+                                }
+                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
                             }
                             break;
                         case SubscriptionType.CHARACTER:
                             if (data.victim.character_id === subscription.id) {
                                 requireSend = true;
+                                color = 'RED';
                             }
                             if (!requireSend) {
                                 for (const attacker of data.attackers) {
@@ -152,7 +173,10 @@ export class ZKillSubscriber {
                                 }
                             }
                             if (requireSend) {
-                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id);
+                                if(subscription.limitType !== LimitType.NONE && !await this.isInLimit(subscription, data.solar_system_id)) {
+                                    return;
+                                }
+                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
                             }
                             break;
                         default:
@@ -165,7 +189,7 @@ export class ZKillSubscriber {
         });
     }
 
-    private async sendKill(guildId: string, channelId:string, subType: SubscriptionType, data:any, subId?: number) {
+    private async sendKill(guildId: string, channelId:string, subType: SubscriptionType, data:any, subId?: number, messageColor: ColorResolvable = 'GREY') {
         await this.asyncLock.acquire('sendKill', async (done) => {
             const cache = MemoryCache.get(`${channelId}_${data.killmail_id}`);
             // Mail was already send, prevent from sending twice
@@ -175,11 +199,37 @@ export class ZKillSubscriber {
             }
             const c = <TextChannel>await this.doClient.channels.cache.get(channelId);
             if(c) {
+                let embedding = null;
                 try {
+                    embedding = await ogs({url: data.zkb.url});
+                } catch (e) {
+                    // Do nothing
+                }
+                try {
+                    const content : MessageOptions = {};
+                    if(embedding?.error === false) {
+                        content.embeds = [{
+                            title: embedding?.result.ogTitle,
+                            description: embedding?.result.ogDescription,
+                            thumbnail: {
+                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                                // @ts-ignore
+                                url: embedding?.result.ogImage?.url,
+                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                                // @ts-ignore
+                                height: embedding?.result.ogImage?.height,
+                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                                // @ts-ignore
+                                width: embedding?.result.ogImage?.width
+                            },
+                            url: data.zkb.url,
+                            color: messageColor
+                        }];
+                    } else {
+                        content.content = data.zkb.url;
+                    }
                     await c.send(
-                        {
-                            content: data.zkb.url
-                        }
+                        content
                     );
                     MemoryCache.put(`${channelId}_${data.killmail_id}`, 'send', 60000); // Prevent from sending again, cache it for 1 min
                 } catch (e) {
@@ -220,7 +270,7 @@ export class ZKillSubscriber {
         return this.instance;
     }
 
-    public subscribe(subType: SubscriptionType, guildId: string, channel: string, id?: number, minValue = 0) {
+    public subscribe(subType: SubscriptionType, guildId: string, channel: string, id?: number, minValue = 0, limitType: LimitType = LimitType.NONE, limitIds?: string) {
         if(!this.subscriptions.has(guildId)) {
             this.subscriptions.set(guildId, {channels: new Map<string, SubscriptionChannel>()});
         }
@@ -231,7 +281,7 @@ export class ZKillSubscriber {
         const guildChannel = guild?.channels.get(channel);
         const ident = `${subType}${id?id:''}`;
         if(!guildChannel?.subscriptions.has(ident)) {
-            guildChannel?.subscriptions.set(ident, {subType, id, minValue});
+            guildChannel?.subscriptions.set(ident, {subType, id, minValue, limitType, limitIds});
         }
         fs.writeFileSync('./config/' + guildId + '.json', JSON.stringify(this.generateObject(guild)), 'utf8');
     }
@@ -291,7 +341,11 @@ export class ZKillSubscriber {
                 const guildId = file.name.match(/(\d*)\.json$/);
                 if(guildId && guildId.length > 0 && guildId[0]) {
                     const fileContent = fs.readFileSync('./config/' + file.name, 'utf8');
-                    this.subscriptions.set(guildId[1], {channels: this.createChannelMap(JSON.parse(fileContent).channels)});
+                    const parsedFileContent = JSON.parse(fileContent);
+                    if(parsedFileContent.limitType === undefined) {
+                        parsedFileContent.limitType = 'none';
+                    }
+                    this.subscriptions.set(guildId[1], {channels: this.createChannelMap(parsedFileContent.channels)});
                 }
             }
         }
@@ -339,5 +393,17 @@ export class ZKillSubscriber {
                 this.systems.set(Number.parseInt(key), data[key] as SolarSystem);
             }
         }
+    }
+
+    private async isInLimit(subscription: Subscription, solar_system_id: number) {
+        const systemData = await this.getSystemData(solar_system_id);
+        const limit = subscription.limitIds?.split(',') || [];
+        if (subscription.limitType === LimitType.SYSTEM && limit.indexOf(systemData.id.toString()) !==  -1) {
+            return true;
+        }
+        if (subscription.limitType === LimitType.CONSTELLATION && limit.indexOf(systemData.constellationId.toString()) !==  -1) {
+            return true;
+        }
+        return subscription.limitType === LimitType.REGION && limit.indexOf(systemData.regionId.toString()) !==  -1;
     }
 }
