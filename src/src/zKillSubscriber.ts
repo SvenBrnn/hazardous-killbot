@@ -133,7 +133,6 @@ export class ZKillSubscriber {
                             }
                             if (requireSend) {
                                 if(subscription.limitType !== LimitType.NONE && !await this.isInLimit(subscription, data.solar_system_id)) {
-                                    console.log(data.solar_system_id + ' filtered for subscription');
                                     return;
                                 }
                                 await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
@@ -342,9 +341,6 @@ export class ZKillSubscriber {
                 if(guildId && guildId.length > 0 && guildId[0]) {
                     const fileContent = fs.readFileSync('./config/' + file.name, 'utf8');
                     const parsedFileContent = JSON.parse(fileContent);
-                    if(parsedFileContent.limitType === undefined) {
-                        parsedFileContent.limitType = 'none';
-                    }
                     this.subscriptions.set(guildId[1], {channels: this.createChannelMap(parsedFileContent.channels)});
                 }
             }
@@ -364,6 +360,9 @@ export class ZKillSubscriber {
         const map = new Map<string, Subscription>();
         const keys = Object.keys(object);
         for(const key of keys) {
+            if(object[key].limitType === undefined) {
+                object[key].limitType = 'none';
+            }
             map.set(key, object[key]);
         }
         return map;
