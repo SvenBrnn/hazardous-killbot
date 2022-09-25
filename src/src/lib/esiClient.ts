@@ -5,6 +5,7 @@ const ESI_URL = 'https://esi.evetech.net/latest/';
 const GET_SOLAR_SYSTEM_URL = 'universe/systems/%1/';
 const GET_CONSTELLATION_URL = 'universe/constellations/%1/';
 const GET_REGION_URL = 'universe/regions/%1/';
+const GET_TYPE_DATA_URL = '/universe/types/%1/';
 
 export class EsiClient {
     private axios: Axios;
@@ -38,5 +39,13 @@ export class EsiClient {
             constellationId: constData.data.constellation_id,
             constellationName: constData.data.name
         };
+    }
+
+    async getTypeGroupId(shipId: number): Promise<number> {
+        const itemData = await this.fetch(GET_TYPE_DATA_URL.replace('%1', shipId.toString()));
+        if(itemData.data.error) {
+            throw new Error('ITEM_FETCH_ERROR');
+        }
+        return Number.parseInt(itemData.data.group_id);
     }
 }

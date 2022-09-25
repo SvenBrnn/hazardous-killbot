@@ -50,6 +50,38 @@ export class UnsubscribeCommand extends AbstractCommand {
                     .setRequired(true)
             ));
 
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('group')
+            .setDescription('Unsubscribe character from channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the character')
+                    .setRequired(true)
+            ));
+
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('region')
+            .setDescription('Unsubscribe character from channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the character')
+                    .setRequired(true)
+            ));
+
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('constellation')
+            .setDescription('Unsubscribe character from channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the character')
+                    .setRequired(true)
+            ));
+
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('system')
+            .setDescription('Unsubscribe character from channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the character')
+                    .setRequired(true)
+            ));
+
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('public')
             .setDescription('Unsubscribe public feed from channel'));
 

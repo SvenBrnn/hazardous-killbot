@@ -1,3 +1,10 @@
+2022-09-25
+---
+
+- make system/region/constellation unsubscribeable
+- add new functionality to subscribe to a ship group
+- __attention: new commands will roll out within 24 hours__
+ 
 2022-06-30
 ---
 

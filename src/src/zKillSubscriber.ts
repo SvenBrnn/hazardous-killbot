@@ -15,7 +15,8 @@ export enum SubscriptionType {
     SYSTEM = 'system',
     corporation = 'corporation',
     ALLIANCE = 'alliance',
-    CHARACTER = 'character'
+    CHARACTER = 'character',
+    GROUP = 'group'
 }
 
 export enum LimitType {
@@ -56,6 +57,7 @@ export class ZKillSubscriber {
 
     protected subscriptions: Map<string, SubscriptionGuild>;
     protected systems: Map<number, SolarSystem>;
+    protected ships: Map<number, number>;
     protected rest: REST;
 
     protected asyncLock: AsyncLock;
@@ -66,8 +68,10 @@ export class ZKillSubscriber {
         this.esiClient = new EsiClient();
         this.subscriptions = new Map<string, SubscriptionGuild>();
         this.systems = new Map<number, SolarSystem>();
+        this.ships = new Map<number, number>();
         this.loadConfig();
         this.loadSystems();
+        this.loadShips();
 
         this.doClient = client;
         this.rest = new REST({ version: '9' }).setToken(process.env.DISCORD_BOT_TOKEN || '');
@@ -93,7 +97,7 @@ export class ZKillSubscriber {
                 channel.subscriptions.forEach(async (subscription) => {
                     let color : ColorResolvable = 'GREEN';
                     try {
-                        let requireSend = false, systemData = null;
+                        let requireSend = false, systemData = null, groupId = null;
                         if (subscription.minValue > data.zkb.totalValue) {
                             return; // Do not send if below the min value
                         }
@@ -168,6 +172,32 @@ export class ZKillSubscriber {
                                     if (attacker.character_id === subscription.id) {
                                         requireSend = true;
                                         break;
+                                    }
+                                }
+                            }
+                            if (requireSend) {
+                                if(subscription.limitType !== LimitType.NONE && !await this.isInLimit(subscription, data.solar_system_id)) {
+                                    return;
+                                }
+                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
+                            }
+                            break;
+                        case SubscriptionType.GROUP:
+                            if(data.victim.ship_type_id) {
+                                groupId = await this.getShipGroup(data.victim.ship_type_id);
+                                if (groupId === subscription.id) {
+                                    requireSend = true;
+                                    color = 'RED';
+                                }
+                            }
+                            if (!requireSend) {
+                                for (const attacker of data.attackers) {
+                                    if(attacker.ship_type_id) {
+                                        groupId = await this.getShipGroup(attacker.ship_type_id);
+                                        if (groupId === subscription.id) {
+                                            requireSend = true;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -384,12 +414,38 @@ export class ZKillSubscriber {
         });
     }
 
+    private async getShipGroup(shipId: number): Promise<number> {
+        return await this.asyncLock.acquire('fetchShip', async (done) => {
+
+            let group = this.ships.get(shipId);
+            if (group) {
+                done(undefined, group);
+                return;
+            }
+            group = await this.esiClient.getTypeGroupId(shipId);
+            this.ships.set(shipId, group);
+            fs.writeFileSync('./config/ships.json', JSON.stringify(Object.fromEntries(this.ships)), 'utf8');
+
+            done(undefined, group);
+        });
+    }
+
     private loadSystems() {
         if(fs.existsSync('./config/systems.json')) {
             const fileContent = fs.readFileSync('./config/systems.json', 'utf8');
             const data = JSON.parse(fileContent);
             for (const key in data) {
                 this.systems.set(Number.parseInt(key), data[key] as SolarSystem);
+            }
+        }
+    }
+
+    private loadShips() {
+        if(fs.existsSync('./config/ships.json')) {
+            const fileContent = fs.readFileSync('./config/ships.json', 'utf8');
+            const data = JSON.parse(fileContent);
+            for (const key in data) {
+                this.ships.set(Number.parseInt(key), data[key]);
             }
         }
     }
