@@ -223,6 +223,11 @@ export class SubscribeCommand extends AbstractCommand {
                     .setDescription('Minimum isk to show the entry')
                     .setRequired(false)
             )
+            .addStringOption(option =>
+                option.setName('limit-ship-ids')
+                    .setDescription('Limit to ship id, comma seperated ids')
+                    .setRequired(false)
+            )
             .setDescription('Subscribe public feed to channel'));
 
         return slashCommand;

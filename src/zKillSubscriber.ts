@@ -127,9 +127,53 @@ export class ZKillSubscriber {
 
                         switch (subscription.subType) {
 
-                        case SubscriptionType.PUBLIC:
-                            await this.sendKill(guildId, channelId, subscription.subType, data);
+                        case SubscriptionType.PUBLIC: {
+                            if(subscription.limitType !== LimitType.SHIP_TYPE_ID) {
+                                await this.sendKill(guildId, channelId, subscription.subType, data);
+                                return;
+                            }
+                            if(!data.victim.ship_type_id) {
+                                return;
+                            }
+                            const limitShipIds = subscription.limitIds?.split(',') || [];
+                            for (const permittedShipId of limitShipIds) {
+                                const permittedShipGroupId = await this.getShipGroup(Number(permittedShipId));
+
+                                // Determine if the victim has a matching ship type.
+                                groupId = await this.getShipGroup(data.victim.ship_type_id);
+                                if (groupId === permittedShipGroupId) {
+                                    requireSend = true;
+                                    color = 'RED';
+                                }
+
+                                // Victim is not permitted ship type. Check attackers for any matching.
+                                //if (!requireSend) {
+                                //    for (const attacker of data.attackers) {
+                                //        if(attacker.ship_type_id) {
+                                //            groupId = await this.getShipGroup(attacker.ship_type_id);
+                                //            console.log('attacker: ' + groupId);
+                                //            if (groupId === permittedShipGroupId) {
+                                //                requireSend = true;
+                                //                break;
+                                //            }
+                                //        }
+                                //    }
+                                //}
+
+                                if (requireSend) {
+                                    console.log('sending public ship-limited kill');
+                                    await this.sendKill(
+                                        guildId, 
+                                        channelId, 
+                                        subscription.subType, 
+                                        data, 
+                                        subscription.id, 
+                                        color,
+                                    );
+                                }
+                            }
                             break;
+                        }
 
                         case SubscriptionType.REGION:
                             systemData = await this.getSystemData(data.solar_system_id);
