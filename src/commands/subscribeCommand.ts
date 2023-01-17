@@ -18,32 +18,45 @@ export class SubscribeCommand extends AbstractCommand {
         const limitRegion = interaction.options.getString('limit-region-ids');
         const limitConstellation = interaction.options.getString('limit-constellation-ids');
         const limitSystem = interaction.options.getString('limit-system-ids');
+        const limitShips = interaction.options.getString('limit-ship-ids');
 
         let reply = 'We subscribed to zkillboard channel: ' + interaction.options.getSubcommand();
         let limitType: LimitType = LimitType.NONE, limitIds;
-        if(limitConstellation || limitRegion || limitSystem) {
-            if(limitConstellation && limitRegion || limitConstellation && limitSystem || limitRegion && limitSystem) {
-                interaction.reply({content: 'Only one type of limit is allowed!', ephemeral: true});
-                return;
-            }
+        if(limitConstellation || limitRegion || limitSystem || limitShips) {
+            // if(limitConstellation && limitRegion || limitConstellation && limitSystem || limitRegion && limitSystem) {
+            //     interaction.reply({content: 'Only one type of limit is allowed!', ephemeral: true});
+            //     return;
+            // }
             if(limitRegion) {
                 limitType = LimitType.REGION;
                 limitIds = limitRegion;
-                reply = 'Region filter: + ' + limitRegion;
+                reply += '\nRegion filter: + ' + limitRegion;
             }
             if(limitConstellation) {
                 limitType = LimitType.CONSTELLATION;
                 limitIds = limitConstellation;
-                reply = 'Constellation filter: + ' + limitRegion;
+                reply += '\nConstellation filter: + ' + limitRegion;
             }
             if(limitSystem) {
                 limitType = LimitType.SYSTEM;
                 limitIds = limitSystem;
-                reply = 'System filter: + ' + limitRegion;
-
+                reply += '\nSystem filter: + ' + limitRegion;
+            }
+            if(limitShips) {
+                limitType = LimitType.SHIP_TYPE_ID;
+                limitIds = limitShips;
+                reply += '\nShip ID filter: + ' + limitShips;
             }
         }
-        sub.subscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined, minValue ? minValue : 0, limitType, limitIds);
+        sub.subscribe(
+            subCommand, 
+            interaction.guildId, 
+            interaction.channelId, 
+            id ? id : undefined, 
+            minValue ? minValue : 0, 
+            limitType, 
+            limitIds,
+        );
 
         if(id) {
             reply += ' ID: ' + id;
@@ -149,7 +162,6 @@ export class SubscribeCommand extends AbstractCommand {
                 option.setName('id')
                     .setDescription('ID for the region')
                     .setRequired(true)
-
             )
             .addStringOption(option =>
                 option.setName('limit-region-ids')
@@ -164,6 +176,11 @@ export class SubscribeCommand extends AbstractCommand {
             .addStringOption(option =>
                 option.setName('limit-system-ids')
                     .setDescription('Limit to system id, comma seperated ids')
+                    .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName('limit-ship-ids')
+                    .setDescription('Limit to ship id, comma seperated ids')
                     .setRequired(false)
             )
             .addNumberOption(option =>

@@ -16,13 +16,35 @@ export enum SubscriptionType {
     corporation = 'corporation',
     ALLIANCE = 'alliance',
     CHARACTER = 'character',
-    GROUP = 'group'
+    GROUP = 'group',
 }
+
+// Astrahus 35832
+// Fortizar 35833
+// Sotiyo 35827
+// Raitaru 35825
+// Azbel 35826
+// Athanor 35835
+// Tatara 35836
+// STP1 35947
+// STP2 47366
+// SSW1 35943
+// SSW2 47351
+// SAML1 35921
+// SAML2 47323
+// SXEN1 35924
+// SXEN2 47330
+// SPDB1 35926
+// SPDB2 47327
+// SFWD1 35949
+// SFWD2 47334
+// SENBP 35944
 
 export enum LimitType {
     REGION = 'region',
     CONSTELLATION = 'constellation',
     SYSTEM = 'system',
+    SHIP_TYPE_ID = 'type',
     NONE = 'none'
 }
 
@@ -97,31 +119,77 @@ export class ZKillSubscriber {
                 channel.subscriptions.forEach(async (subscription) => {
                     let color : ColorResolvable = 'GREEN';
                     try {
-                        let requireSend = false, systemData = null, groupId = null;
+                        let requireSend = false, systemData = null;
+                        let groupId: number | string | null = null;
                         if (subscription.minValue > data.zkb.totalValue) {
                             return; // Do not send if below the min value
                         }
+
                         switch (subscription.subType) {
+
                         case SubscriptionType.PUBLIC:
                             await this.sendKill(guildId, channelId, subscription.subType, data);
                             break;
+
                         case SubscriptionType.REGION:
                             systemData = await this.getSystemData(data.solar_system_id);
-                            if (systemData.regionId === subscription.id) {
-                                await this.sendKill(guildId, channelId, subscription.subType, data);
+                            if (systemData.regionId !== subscription.id) {
+                                return;
+                            }
+                            if(data.victim.ship_type_id && subscription.limitType === LimitType.SHIP_TYPE_ID) {
+                                const limitShipIds = subscription.limitIds?.split(',') || [];
+                                for (const permittedShipId of limitShipIds) {
+                                    const permittedShipGroupId = await this.getShipGroup(Number(permittedShipId));
+
+                                    // Determine if the victim has a matching ship type.
+                                    groupId = await this.getShipGroup(data.victim.ship_type_id);
+                                    if (groupId === permittedShipGroupId) {
+                                        requireSend = true;
+                                        color = 'RED';
+                                    }
+
+                                    // Victim is not permitted ship type. Check attackers for any matching.
+                                    if (!requireSend) {
+                                        for (const attacker of data.attackers) {
+                                            if(attacker.ship_type_id) {
+                                                groupId = await this.getShipGroup(attacker.ship_type_id);
+                                                console.log('attacker: ' + groupId);
+                                                if (groupId === permittedShipGroupId) {
+                                                    requireSend = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if (requireSend) {
+                                        console.log('sending region-filter ship-limited kill');
+                                        await this.sendKill(
+                                            guildId, 
+                                            channelId, 
+                                            subscription.subType, 
+                                            data, 
+                                            subscription.id, 
+                                            color,
+                                        );
+                                    }
+                                }
                             }
                             break;
+
                         case SubscriptionType.CONSTELLATION:
                             systemData = await this.getSystemData(data.solar_system_id);
                             if (systemData.constellationId === subscription.id) {
                                 await this.sendKill(guildId, channelId, subscription.subType, data);
                             }
                             break;
+
                         case SubscriptionType.SYSTEM:
                             if (data.solar_system_id === subscription.id) {
                                 await this.sendKill(guildId, channelId, subscription.subType, data);
                             }
                             break;
+
                         case SubscriptionType.ALLIANCE:
                             if (data.victim.alliance_id === subscription.id) {
                                 requireSend = true;
@@ -142,6 +210,7 @@ export class ZKillSubscriber {
                                 await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
                             }
                             break;
+
                         case SubscriptionType.corporation:
                             if (data.victim.corporation_id === subscription.id) {
                                 requireSend = true;
@@ -162,6 +231,7 @@ export class ZKillSubscriber {
                                 await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
                             }
                             break;
+
                         case SubscriptionType.CHARACTER:
                             if (data.victim.character_id === subscription.id) {
                                 requireSend = true;
@@ -182,6 +252,7 @@ export class ZKillSubscriber {
                                 await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
                             }
                             break;
+
                         case SubscriptionType.GROUP:
                             if(data.victim.ship_type_id) {
                                 groupId = await this.getShipGroup(data.victim.ship_type_id);
@@ -210,6 +281,7 @@ export class ZKillSubscriber {
                             break;
                         default:
                         }
+
                     } catch (e) {
                         console.log(e);
                     }
@@ -218,7 +290,14 @@ export class ZKillSubscriber {
         });
     }
 
-    private async sendKill(guildId: string, channelId:string, subType: SubscriptionType, data:any, subId?: number, messageColor: ColorResolvable = 'GREY') {
+    private async sendKill(
+        guildId: string, 
+        channelId:string, 
+        subType: SubscriptionType, 
+        data:any, 
+        subId?: number, 
+        messageColor: ColorResolvable = 'GREY',
+    ) {
         await this.asyncLock.acquire('sendKill', async (done) => {
             const cache = MemoryCache.get(`${channelId}_${data.killmail_id}`);
             // Mail was already send, prevent from sending twice
@@ -299,7 +378,15 @@ export class ZKillSubscriber {
         return this.instance;
     }
 
-    public subscribe(subType: SubscriptionType, guildId: string, channel: string, id?: number, minValue = 0, limitType: LimitType = LimitType.NONE, limitIds?: string) {
+    public subscribe(
+        subType: SubscriptionType, 
+        guildId: string, 
+        channel: string, 
+        id?: number, 
+        minValue = 0, 
+        limitType: LimitType = LimitType.NONE, 
+        limitIds?: string,
+    ) {
         if(!this.subscriptions.has(guildId)) {
             this.subscriptions.set(guildId, {channels: new Map<string, SubscriptionChannel>()});
         }

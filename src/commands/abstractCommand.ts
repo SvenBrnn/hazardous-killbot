@@ -2,9 +2,9 @@ import {SlashCommandBuilder} from '@discordjs/builders';
 import {CommandInteraction} from 'discord.js';
 
 export abstract class AbstractCommand  {
-    protected name  = '';
+    protected name = '';
 
-    public getName() : string {
+    public getName(): string {
         return this.name;
     }
 
