@@ -1,13 +1,7 @@
-# hazardous-killbot
-[Invite the Bot to your Server!](https://discord.com/api/oauth2/authorize?client_id=981835348030160948&permissions=274877925376&scope=bot%20applications.commands)
-
-User: Hazardous-Killbot#1916
-
+# killbot
 Posts EvE-Online Killmails von zkillboard.com to a discord channel using the zkillboard webhook endpoint and discord.js
 
-[Join Our Discord](https://discord.gg/ACCRMvPGSf)
-
-The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/), ISK donations are always welcome if you like my work ;)
+The bot was forked from [hazardous](https://github.com/SvenBrnn/hazardous-killbot)
 
 ## Commands
 
@@ -68,7 +62,7 @@ Open your corp/char/alliance page on zkillboard and copy the number at the end o
 | DISCORD_CLIENT_ID    | Your discord application client id |
 
 ## Licence 
-Copyright 2022 SvenBrnn
+Copyright 2022 ocn
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
