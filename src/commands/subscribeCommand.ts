@@ -222,6 +222,11 @@ export class SubscribeCommand extends AbstractCommand {
                     .setDescription('Limit to ship id, comma seperated ids')
                     .setRequired(false)
             )
+            .addStringOption(option =>
+                option.setName('limit-region-ids')
+                    .setDescription('Limit to region id, comma seperated ids')
+                    .setRequired(false)
+            )
             .addBooleanOption(option =>
                 option.setName('limit-compares-attackers')
                     .setDescription('Enable if attackers should be considered when sending mails')

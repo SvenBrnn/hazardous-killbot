@@ -118,19 +118,28 @@ export class ZKillSubscriber {
             switch (subscription.subType) {
 
             case SubscriptionType.PUBLIC: {
-                if (!subscription.limitTypes.has(LimitType.SHIP_TYPE_ID)) {
+                if (subscription.limitTypes.size === 0) {
                     await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
                     return;
                 }
-                const __ret = await this.sendIfAnyShipsMatchLimitFilter(
-                    data,
-                    <string>subscription.limitTypes.get(LimitType.SHIP_TYPE_ID),
-                    subscription.limitAlsoComparesAttacker,
-                );
-                requireSend = __ret.requireSend;
-                color = __ret.color;
+                if (subscription.limitTypes.has(LimitType.SHIP_TYPE_ID)) {
+                    const __ret = await this.sendIfAnyShipsMatchLimitFilter(
+                        data,
+                        <string>subscription.limitTypes.get(LimitType.SHIP_TYPE_ID),
+                        subscription.limitAlsoComparesAttacker,
+                    );
+                    requireSend = __ret.requireSend;
+                    color = __ret.color;
+                    if (!requireSend) return;
+                }
+                if (subscription.limitTypes.has(LimitType.REGION) ||
+                    subscription.limitTypes.has(LimitType.CONSTELLATION) ||
+                    subscription.limitTypes.has(LimitType.SYSTEM)) {
+                    requireSend = await this.isInLocationLimit(subscription, data.solar_system_id);
+                    if (!requireSend) return;
+                }
                 if (requireSend) {
-                    console.log('sending public ship-limited kill');
+                    console.log('sending public filtered kill');
                     await this.sendMessageToDiscord(
                         guildId,
                         channelId,
@@ -533,8 +542,11 @@ export class ZKillSubscriber {
             (subscription.limitTypes.get(LimitType.CONSTELLATION)?.split(',') || []).indexOf(systemData.constellationId.toString()) !== -1) {
             return true;
         }
-        return subscription.limitTypes.has(LimitType.REGION) &&
-            (subscription.limitTypes.get(LimitType.REGION)?.split(',') || []).indexOf(systemData.regionId.toString());
+        if (subscription.limitTypes.has(LimitType.REGION) &&
+            (subscription.limitTypes.get(LimitType.REGION)?.split(',') || []).indexOf(systemData.regionId.toString()) !== -1) {
+            return true;
+        }
+        return false;
     }
 
     private async getGroupIdForEntityId(shipId: number): Promise<number> {
