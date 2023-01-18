@@ -19,34 +19,28 @@ export class SubscribeCommand extends AbstractCommand {
         const limitConstellation = interaction.options.getString('limit-constellation-ids');
         const limitSystem = interaction.options.getString('limit-system-ids');
         const limitShips = interaction.options.getString('limit-ship-ids');
+        let limitComparesAttackers = interaction.options.getBoolean('limit-compares-attackers');
+        if (limitComparesAttackers == null) {
+            limitComparesAttackers = true;
+        }
 
         let reply = 'We subscribed to zkillboard channel: ' + interaction.options.getSubcommand();
-        let limitType: LimitType = LimitType.NONE, limitIds;
-        if(limitConstellation || limitRegion || limitSystem || limitShips) {
-            // if(limitConstellation && limitRegion || limitConstellation && limitSystem || limitRegion && limitSystem) {
-            //     interaction.reply({content: 'Only one type of limit is allowed!', ephemeral: true});
-            //     return;
-            // }
-            if(limitRegion) {
-                limitType = LimitType.REGION;
-                limitIds = limitRegion;
-                reply += '\nRegion filter: + ' + limitRegion;
-            }
-            if(limitConstellation) {
-                limitType = LimitType.CONSTELLATION;
-                limitIds = limitConstellation;
-                reply += '\nConstellation filter: + ' + limitRegion;
-            }
-            if(limitSystem) {
-                limitType = LimitType.SYSTEM;
-                limitIds = limitSystem;
-                reply += '\nSystem filter: + ' + limitRegion;
-            }
-            if(limitShips) {
-                limitType = LimitType.SHIP_TYPE_ID;
-                limitIds = limitShips;
-                reply += '\nShip ID filter: + ' + limitShips;
-            }
+        const limitTypes = new Map<LimitType, string>();
+        if (limitRegion) {
+            limitTypes.set(LimitType.REGION, limitRegion);
+            reply += '\nRegion filter: + ' + limitRegion;
+        }
+        if (limitConstellation) {
+            limitTypes.set(LimitType.CONSTELLATION, limitConstellation);
+            reply += '\nConstellation filter: + ' + limitRegion;
+        }
+        if (limitSystem) {
+            limitTypes.set(LimitType.SYSTEM, limitSystem);
+            reply += '\nSystem filter: + ' + limitRegion;
+        }
+        if (limitShips) {
+            limitTypes.set(LimitType.SHIP_TYPE_ID, limitShips);
+            reply += '\nShip ID filter: + ' + limitShips;
         }
         sub.subscribe(
             subCommand, 
@@ -54,8 +48,8 @@ export class SubscribeCommand extends AbstractCommand {
             interaction.channelId, 
             id ? id : undefined, 
             minValue ? minValue : 0, 
-            limitType, 
-            limitIds,
+            limitTypes,
+            limitComparesAttackers,
         );
 
         if(id) {
@@ -226,6 +220,11 @@ export class SubscribeCommand extends AbstractCommand {
             .addStringOption(option =>
                 option.setName('limit-ship-ids')
                     .setDescription('Limit to ship id, comma seperated ids')
+                    .setRequired(false)
+            )
+            .addBooleanOption(option =>
+                option.setName('limit-compares-attackers')
+                    .setDescription('Enable if attackers should be considered when sending mails')
                     .setRequired(false)
             )
             .setDescription('Subscribe public feed to channel'));
