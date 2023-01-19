@@ -125,11 +125,11 @@ export class ZKillSubscriber {
                     return;
                 }
                 if (!(subscription.limitTypes instanceof Map)) {
-                    console.log('Limit types is not a map');
+                    console.log('Limit types is not a map, instead = ' + typeof subscription.limitTypes);
                     console.log(subscription);
                 }
                 if (typeof (subscription.limitTypes.has) !== 'function') {
-                    console.log('limitTypes is not a map, or something broke the has function');
+                    console.log('limitTypes is not a map, or something broke the has function, instead = ' + typeof subscription.limitTypes.has);
                     console.log(subscription);
                     return;
                 }
