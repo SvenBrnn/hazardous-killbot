@@ -407,10 +407,10 @@ export class ZKillSubscriber {
         subType: SubscriptionType,
         guildId: string,
         channel: string,
+        limitTypes: Map<LimitType, string>,
+        limitAlsoComparesAttacker: boolean,
         id?: number,
         minValue = 0,
-        limitTypes = new Map<LimitType, string>(),
-        limitAlsoComparesAttacker = false,
     ) {
         if (!this.subscriptions.has(guildId)) {
             this.subscriptions.set(guildId, {channels: new Map<string, SubscriptionChannel>()});
@@ -508,8 +508,8 @@ export class ZKillSubscriber {
         const map = new Map<string, Subscription>();
         const keys = Object.keys(object);
         for (const key of keys) {
-            if (object[key].limitType === undefined) {
-                object[key].limitType = 'none';
+            if (object[key].limitTypes === undefined) {
+                object[key].limitTypes = new Map<LimitType, string>;
             }
             map.set(key, object[key]);
         }

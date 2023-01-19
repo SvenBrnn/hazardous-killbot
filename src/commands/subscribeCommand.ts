@@ -46,10 +46,10 @@ export class SubscribeCommand extends AbstractCommand {
             subCommand, 
             interaction.guildId, 
             interaction.channelId, 
-            id ? id : undefined, 
-            minValue ? minValue : 0, 
             limitTypes,
             limitComparesAttackers,
+            id ? id : undefined,
+            minValue ? minValue : 0,
         );
 
         if(id) {
