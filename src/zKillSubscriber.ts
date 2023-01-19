@@ -115,6 +115,8 @@ export class ZKillSubscriber {
                 return; // Do not send if below the min value
             }
 
+            console.log(`[${new Date()}]["${data.killmail_id}]"`);
+
             switch (subscription.subType) {
 
             case SubscriptionType.PUBLIC: {
