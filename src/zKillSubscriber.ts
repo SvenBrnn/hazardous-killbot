@@ -124,6 +124,15 @@ export class ZKillSubscriber {
                     await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
                     return;
                 }
+                if (!(subscription.limitTypes instanceof Map)) {
+                    console.log('Limit types is not a map');
+                    console.log(subscription);
+                }
+                if (typeof (subscription.limitTypes.has) !== 'function') {
+                    console.log('limitTypes is not a map, or something broke the has function');
+                    console.log(subscription);
+                    return;
+                }
                 if (subscription.limitTypes.has(LimitType.SHIP_TYPE_ID)) {
                     const __ret = await this.sendIfAnyShipsMatchLimitFilter(
                         data,
