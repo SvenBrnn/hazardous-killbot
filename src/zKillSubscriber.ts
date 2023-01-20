@@ -41,6 +41,34 @@ interface Subscription {
     limitAlsoComparesAttacker: boolean
 }
 
+function hasLimitType(subscription: Subscription, limitType: LimitType): boolean {
+    if (subscription.limitTypes instanceof Map) {
+        return subscription.limitTypes.has(limitType);
+    } else {
+        Object.keys(subscription.limitTypes).forEach(key => {
+            if (key === limitType) {
+                return true;
+            }
+        });
+        return false;
+    }
+}
+
+function getLimitType(subscription: Subscription, limitType: LimitType): LimitType | undefined {
+    if (subscription.limitTypes instanceof Map) {
+        return subscription.limitTypes.get(limitType) as LimitType | undefined;
+    } else {
+        Object.keys(subscription.limitTypes).forEach(key => {
+            if (key === limitType) {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                return subscription.limitTypes[key] as LimitType | undefined;
+            }
+        });
+        return undefined;
+    }
+}
+
 export interface SolarSystem {
     id: number;
     regionId: number;
@@ -115,7 +143,8 @@ export class ZKillSubscriber {
                 return; // Do not send if below the min value
             }
 
-            console.log(`[${new Date()}]["${data.killmail_id}]"`);
+            const log_prefix = `[${new Date()}]["${data.killmail_id}"] `;
+            console.log(log_prefix);
 
             switch (subscription.subType) {
 
@@ -124,28 +153,19 @@ export class ZKillSubscriber {
                     await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
                     return;
                 }
-                if (!(subscription.limitTypes instanceof Map)) {
-                    console.log('Limit types is not a map, instead = ' + typeof subscription.limitTypes);
-                    console.log(subscription);
-                }
-                if (typeof (subscription.limitTypes.has) !== 'function') {
-                    console.log('limitTypes is not a map, or something broke the has function, instead = ' + typeof subscription.limitTypes.has);
-                    console.log(subscription);
-                    return;
-                }
-                if (subscription.limitTypes.has(LimitType.SHIP_TYPE_ID)) {
+                if (hasLimitType(subscription, LimitType.SHIP_TYPE_ID)) {
                     const __ret = await this.sendIfAnyShipsMatchLimitFilter(
                         data,
-                        <string>subscription.limitTypes.get(LimitType.SHIP_TYPE_ID),
+                        <string>getLimitType(subscription, LimitType.SHIP_TYPE_ID),
                         subscription.limitAlsoComparesAttacker,
                     );
                     requireSend = __ret.requireSend;
                     color = __ret.color;
                     if (!requireSend) return;
                 }
-                if (subscription.limitTypes.has(LimitType.REGION) ||
-                    subscription.limitTypes.has(LimitType.CONSTELLATION) ||
-                    subscription.limitTypes.has(LimitType.SYSTEM)) {
+                if (hasLimitType(subscription, LimitType.REGION) ||
+                    hasLimitType(subscription, LimitType.CONSTELLATION) ||
+                    hasLimitType(subscription, LimitType.SYSTEM)) {
                     requireSend = await this.isInLocationLimit(subscription, data.solar_system_id);
                     if (!requireSend) return;
                 }
@@ -168,10 +188,10 @@ export class ZKillSubscriber {
                 if (systemData.regionId !== subscription.id) {
                     return;
                 }
-                if (subscription.limitTypes.has(LimitType.SHIP_TYPE_ID)) {
+                if (hasLimitType(subscription, LimitType.SHIP_TYPE_ID)) {
                     const __ret = await this.sendIfAnyShipsMatchLimitFilter(
                         data,
-                        <string>subscription.limitTypes.get(LimitType.SHIP_TYPE_ID),
+                        <string>getLimitType(subscription, LimitType.SHIP_TYPE_ID),
                         subscription.limitAlsoComparesAttacker,
                     );
                     requireSend = __ret.requireSend;
@@ -545,16 +565,16 @@ export class ZKillSubscriber {
 
     private async isInLocationLimit(subscription: Subscription, solar_system_id: number) {
         const systemData = await this.getSystemData(solar_system_id);
-        if (subscription.limitTypes.has(LimitType.SYSTEM) &&
-            (subscription.limitTypes.get(LimitType.SYSTEM)?.split(',') || []).indexOf(systemData.id.toString()) !== -1) {
+        if (hasLimitType(subscription, LimitType.SYSTEM) &&
+            (getLimitType(subscription, LimitType.SYSTEM)?.split(',') || []).indexOf(systemData.id.toString()) !== -1) {
             return true;
         }
         if (subscription.limitTypes.has(LimitType.CONSTELLATION) &&
-            (subscription.limitTypes.get(LimitType.CONSTELLATION)?.split(',') || []).indexOf(systemData.constellationId.toString()) !== -1) {
+            (getLimitType(subscription, LimitType.CONSTELLATION)?.split(',') || []).indexOf(systemData.constellationId.toString()) !== -1) {
             return true;
         }
         if (subscription.limitTypes.has(LimitType.REGION) &&
-            (subscription.limitTypes.get(LimitType.REGION)?.split(',') || []).indexOf(systemData.regionId.toString()) !== -1) {
+            (getLimitType(subscription, LimitType.REGION)?.split(',') || []).indexOf(systemData.regionId.toString()) !== -1) {
             return true;
         }
         return false;
