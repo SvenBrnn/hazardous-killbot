@@ -46,7 +46,11 @@ function hasLimitType(subscription: Subscription, limitType: LimitType): boolean
         return subscription.limitTypes.has(limitType);
     } else {
         Object.keys(subscription.limitTypes).forEach(key => {
+            console.log(`key: ${key} limitType: ${limitType}`);
             if (key === limitType) {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                console.log(`key: ${key} limitType: ${limitType} value: ${subscription.limitTypes[key]}`);
                 return true;
             }
         });
