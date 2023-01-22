@@ -59,7 +59,11 @@ function getLimitType(subscription: Subscription, limitType: LimitType): LimitTy
         return subscription.limitTypes.get(limitType) as LimitType | undefined;
     } else {
         Object.keys(subscription.limitTypes).forEach(key => {
+            console.log(`key: ${key} limitType: ${limitType}`);
             if (key === limitType) {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                console.log(`key: ${key} limitType: ${limitType} value: ${subscription.limitTypes[key]}`);
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 return subscription.limitTypes[key] as LimitType | undefined;
