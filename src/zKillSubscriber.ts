@@ -58,9 +58,9 @@ function hasLimitType(subscription: Subscription, limitType: LimitType): boolean
     }
 }
 
-function getLimitType(subscription: Subscription, limitType: LimitType): LimitType | undefined {
+function getLimitType(subscription: Subscription, limitType: LimitType): string | undefined {
     if (subscription.limitTypes instanceof Map) {
-        return subscription.limitTypes.get(limitType) as LimitType | undefined;
+        return subscription.limitTypes.get(limitType) as string | undefined;
     } else {
         Object.keys(subscription.limitTypes).forEach(key => {
             console.log(`key: ${key} limitType: ${limitType}`);
@@ -70,7 +70,9 @@ function getLimitType(subscription: Subscription, limitType: LimitType): LimitTy
                 console.log(`key: ${key} limitType: ${limitType} value: ${subscription.limitTypes[key]}`);
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                return subscription.limitTypes[key] as LimitType | undefined;
+                const ret = subscription.limitTypes[key] as string | undefined;
+                console.log(`ret: ${ret}, typeof ret: ${typeof ret}`);
+                return ret;
             }
         });
         return undefined;
