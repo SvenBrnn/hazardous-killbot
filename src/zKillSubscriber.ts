@@ -553,11 +553,19 @@ export class ZKillSubscriber {
     }
 
     private createSubscriptionMap(object: any): Map<string, Subscription> {
+        console.log('Creating subscription map');
         const map = new Map<string, Subscription>();
         const keys = Object.keys(object);
         for (const key of keys) {
+            console.log('Creating subscription for ' + key);
             if (object[key].limitTypes === undefined) {
                 object[key].limitTypes = new Map<LimitType, string>;
+            }
+            if (object[key].limitTypes instanceof Object) {
+                console.log('Converting limitTypes from Object to Map');
+                const properties = Object.entries(object[key].limitTypes);
+                object[key].limitTypes = new Map(properties);
+                console.log('LimitTypes = ' + object[key].limitTypes);
             }
             map.set(key, object[key]);
         }
