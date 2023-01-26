@@ -116,7 +116,7 @@ export class ZKillSubscriber {
 
     protected static connect(sub: ZKillSubscriber) {
         const websocket = new WebSocket('wss://zkillboard.com/websocket/');
-        websocket.onmessage = sub.onMessage.bind(this);
+        websocket.onmessage = sub.onMessage.bind(sub);
         websocket.onopen = () => {
             websocket.send(JSON.stringify({
                 'action': 'sub',
