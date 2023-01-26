@@ -90,7 +90,6 @@ export interface SolarSystem {
 export class ZKillSubscriber {
     protected static instance: ZKillSubscriber;
     protected doClient: Client;
-    protected websocket: WebSocket;
 
     protected subscriptions: Map<string, SubscriptionGuild>;
     protected systems: Map<number, SolarSystem>;
@@ -112,18 +111,27 @@ export class ZKillSubscriber {
 
         this.doClient = client;
         this.rest = new REST({version: '9'}).setToken(process.env.DISCORD_BOT_TOKEN || '');
+        ZKillSubscriber.connect(this);
+    }
 
-        this.websocket = new WebSocket('wss://zkillboard.com/websocket/');
-        this.websocket.onmessage = this.onMessage.bind(this);
-
-        this.websocket.onopen = () => {
-            this.websocket.send(JSON.stringify({
+    protected static connect(sub: ZKillSubscriber) {
+        const websocket = new WebSocket('wss://zkillboard.com/websocket/');
+        websocket.onmessage = sub.onMessage.bind(this);
+        websocket.onopen = () => {
+            websocket.send(JSON.stringify({
                 'action': 'sub',
                 'channel': 'killstream'
             }));
         };
-        this.websocket.onclose = () => {
-            process.exit(0);
+        websocket.onclose = (e) => {
+            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+            setTimeout(function() {
+                ZKillSubscriber.connect(sub);
+            }, 1000);
+        };
+        websocket.onerror = (error) => {
+            console.error('Socket encountered error: ', error.message, 'Closing socket');
+            websocket.close();
         };
     }
 
@@ -132,6 +140,8 @@ export class ZKillSubscriber {
         this.subscriptions.forEach((guild, guildId) => {
             guild.channels.forEach((channel, channelId) => {
                 channel.subscriptions.forEach(async (subscription) => {
+                    const log_prefix = `["${data.killmail_id}"][${new Date()}] `;
+                    console.log(log_prefix);
                     await this.process_subscription(subscription, data, guildId, channelId);
                 });
             });
@@ -152,9 +162,6 @@ export class ZKillSubscriber {
             if (subscription.minValue > data.zkb.totalValue) {
                 return; // Do not send if below the min value
             }
-
-            const log_prefix = `[${new Date()}]["${data.killmail_id}"] `;
-            console.log(log_prefix);
 
             switch (subscription.subType) {
 
