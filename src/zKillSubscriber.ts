@@ -45,15 +45,19 @@ function hasLimitType(subscription: Subscription, limitType: LimitType): boolean
     if (subscription.limitTypes instanceof Map) {
         return subscription.limitTypes.has(limitType);
     } else {
-        Object.keys(subscription.limitTypes).forEach(key => {
-            console.log(`key: ${key} limitType: ${limitType}`);
-            if (key === limitType) {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                console.log(`key: ${key} limitType: ${limitType} value: ${subscription.limitTypes[key]}`);
-                return true;
-            }
-        });
+        console.log('subscription is not of type Map, exiting');
+        console.log(`subscription.limitTypes: ${subscription.limitTypes}`);
+        console.log(`subscription.limitTypes type: ${typeof subscription.limitTypes}`);
+        process.exit(1);
+        // Object.keys(subscription.limitTypes).forEach(key => {
+        //     console.log(`key: ${key} limitType: ${limitType}`);
+        //     if (key === limitType) {
+        //         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //         // @ts-ignore
+        //         console.log(`key: ${key} limitType: ${limitType} value: ${subscription.limitTypes[key]}`);
+        //         return true;
+        //     }
+        // });
         return false;
     }
 }
@@ -62,19 +66,23 @@ function getLimitType(subscription: Subscription, limitType: LimitType): string 
     if (subscription.limitTypes instanceof Map) {
         return subscription.limitTypes.get(limitType) as string | undefined;
     } else {
-        Object.keys(subscription.limitTypes).forEach(key => {
-            console.log(`key: ${key} limitType: ${limitType}`);
-            if (key === limitType) {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                console.log(`key: ${key} limitType: ${limitType} value: ${subscription.limitTypes[key]}`);
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                const ret = subscription.limitTypes[key] as string | undefined;
-                console.log(`ret: ${ret}, typeof ret: ${typeof ret}`);
-                return ret;
-            }
-        });
+        console.log('subscription is not of type Map, exiting');
+        console.log(`subscription.limitTypes: ${subscription.limitTypes}`);
+        console.log(`subscription.limitTypes type: ${typeof subscription.limitTypes}`);
+        process.exit(2);
+        // Object.keys(subscription.limitTypes).forEach(key => {
+        //     console.log(`key: ${key} limitType: ${limitType}`);
+        //     if (key === limitType) {
+        //         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //         // @ts-ignore
+        //         console.log(`key: ${key} limitType: ${limitType} value: ${subscription.limitTypes[key]}`);
+        //         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //         // @ts-ignore
+        //         const ret = subscription.limitTypes[key] as string | undefined;
+        //         console.log(`ret: ${ret}, typeof ret: ${typeof ret}`);
+        //         return ret;
+        //     }
+        // });
         return undefined;
     }
 }
@@ -138,11 +146,15 @@ export class ZKillSubscriber {
     protected async onMessage(event: MessageEvent) {
         const data = JSON.parse(event.data.toString());
         this.subscriptions.forEach((guild, guildId) => {
+            const log_prefix = `["${data.killmail_id}"][${new Date()}] `;
+            console.log(log_prefix);
             guild.channels.forEach((channel, channelId) => {
                 channel.subscriptions.forEach(async (subscription) => {
-                    const log_prefix = `["${data.killmail_id}"][${new Date()}] `;
-                    console.log(log_prefix);
-                    await this.process_subscription(subscription, data, guildId, channelId);
+                    try {
+                        await this.process_subscription(subscription, data, guildId, channelId);
+                    } catch (e) {
+                        console.log(e);
+                    }
                 });
             });
         });
@@ -155,161 +167,156 @@ export class ZKillSubscriber {
         channelId: string,
     ) {
         let color: ColorResolvable = 'GREEN';
-        try {
-            let requireSend = false;
-            let systemData = null;
+        let requireSend = false;
+        let systemData = null;
 
-            if (subscription.minValue > data.zkb.totalValue) {
-                return; // Do not send if below the min value
+        if (subscription.minValue > data.zkb.totalValue) {
+            return; // Do not send if below the min value
+        }
+
+        switch (subscription.subType) {
+
+        case SubscriptionType.PUBLIC: {
+            if (subscription.limitTypes.size === 0) {
+                await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
+                return;
             }
+            if (hasLimitType(subscription, LimitType.SHIP_TYPE_ID)) {
+                const __ret = await this.sendIfAnyShipsMatchLimitFilter(
+                    data,
+                    <string>getLimitType(subscription, LimitType.SHIP_TYPE_ID),
+                    subscription.limitAlsoComparesAttacker,
+                );
+                requireSend = __ret.requireSend;
+                color = __ret.color;
+                if (!requireSend) return;
+            }
+            if (hasLimitType(subscription, LimitType.REGION) ||
+                hasLimitType(subscription, LimitType.CONSTELLATION) ||
+                hasLimitType(subscription, LimitType.SYSTEM)) {
+                requireSend = await this.isInLocationLimit(subscription, data.solar_system_id);
+                if (!requireSend) return;
+            }
+            if (requireSend) {
+                console.log('sending public filtered kill');
+                await this.sendMessageToDiscord(
+                    guildId,
+                    channelId,
+                    subscription.subType,
+                    data,
+                    subscription.id,
+                    color,
+                );
+            }
+            break;
+        }
 
-            switch (subscription.subType) {
+        case SubscriptionType.REGION: {
+            systemData = await this.getSystemData(data.solar_system_id);
+            if (systemData.regionId !== subscription.id) {
+                return;
+            }
+            if (hasLimitType(subscription, LimitType.SHIP_TYPE_ID)) {
+                const __ret = await this.sendIfAnyShipsMatchLimitFilter(
+                    data,
+                    <string>getLimitType(subscription, LimitType.SHIP_TYPE_ID),
+                    subscription.limitAlsoComparesAttacker,
+                );
+                requireSend = __ret.requireSend;
+                color = __ret.color;
+            } else {
+                requireSend = true;
+            }
+            if (requireSend) {
+                console.log('sending region-filter ship-limited kill');
+                await this.sendMessageToDiscord(
+                    guildId,
+                    channelId,
+                    subscription.subType,
+                    data,
+                    subscription.id,
+                    color,
+                );
+            }
+            break;
+        }
 
-            case SubscriptionType.PUBLIC: {
-                if (subscription.limitTypes.size === 0) {
-                    await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
+        case SubscriptionType.CONSTELLATION:
+            systemData = await this.getSystemData(data.solar_system_id);
+            if (systemData.constellationId === subscription.id) {
+                await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
+            }
+            break;
+
+        case SubscriptionType.SYSTEM:
+            if (data.solar_system_id === subscription.id) {
+                await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
+            }
+            break;
+
+        case SubscriptionType.ALLIANCE:
+            if (data.victim.alliance_id === subscription.id) {
+                requireSend = true;
+                color = 'RED';
+            }
+            if (!requireSend) {
+                for (const attacker of data.attackers) {
+                    if (attacker.alliance_id === subscription.id) {
+                        requireSend = true;
+                        break;
+                    }
+                }
+            }
+            if (requireSend) {
+                if (subscription.limitTypes.size !== 0 && !await this.isInLocationLimit(subscription, data.solar_system_id)) {
                     return;
                 }
-                if (hasLimitType(subscription, LimitType.SHIP_TYPE_ID)) {
-                    const __ret = await this.sendIfAnyShipsMatchLimitFilter(
-                        data,
-                        <string>getLimitType(subscription, LimitType.SHIP_TYPE_ID),
-                        subscription.limitAlsoComparesAttacker,
-                    );
-                    requireSend = __ret.requireSend;
-                    color = __ret.color;
-                    if (!requireSend) return;
-                }
-                if (hasLimitType(subscription, LimitType.REGION) ||
-                    hasLimitType(subscription, LimitType.CONSTELLATION) ||
-                    hasLimitType(subscription, LimitType.SYSTEM)) {
-                    requireSend = await this.isInLocationLimit(subscription, data.solar_system_id);
-                    if (!requireSend) return;
-                }
-                if (requireSend) {
-                    console.log('sending public filtered kill');
-                    await this.sendMessageToDiscord(
-                        guildId,
-                        channelId,
-                        subscription.subType,
-                        data,
-                        subscription.id,
-                        color,
-                    );
-                }
-                break;
+                await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data, subscription.id, color);
             }
+            break;
 
-            case SubscriptionType.REGION: {
-                systemData = await this.getSystemData(data.solar_system_id);
-                if (systemData.regionId !== subscription.id) {
+        case SubscriptionType.CORPORATION:
+            if (data.victim.corporation_id === subscription.id) {
+                requireSend = true;
+                color = 'RED';
+            }
+            if (!requireSend) {
+                for (const attacker of data.attackers) {
+                    if (attacker.corporation_id === subscription.id) {
+                        requireSend = true;
+                        break;
+                    }
+                }
+            }
+            if (requireSend) {
+                if (subscription.limitTypes.size !== 0 && !await this.isInLocationLimit(subscription, data.solar_system_id)) {
                     return;
                 }
-                if (hasLimitType(subscription, LimitType.SHIP_TYPE_ID)) {
-                    const __ret = await this.sendIfAnyShipsMatchLimitFilter(
-                        data,
-                        <string>getLimitType(subscription, LimitType.SHIP_TYPE_ID),
-                        subscription.limitAlsoComparesAttacker,
-                    );
-                    requireSend = __ret.requireSend;
-                    color = __ret.color;
-                } else {
-                    requireSend = true;
-                }
-                if (requireSend) {
-                    console.log('sending region-filter ship-limited kill');
-                    await this.sendMessageToDiscord(
-                        guildId,
-                        channelId,
-                        subscription.subType,
-                        data,
-                        subscription.id,
-                        color,
-                    );
-                }
-                break;
+                await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data, subscription.id, color);
             }
+            break;
 
-            case SubscriptionType.CONSTELLATION:
-                systemData = await this.getSystemData(data.solar_system_id);
-                if (systemData.constellationId === subscription.id) {
-                    await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
-                }
-                break;
-
-            case SubscriptionType.SYSTEM:
-                if (data.solar_system_id === subscription.id) {
-                    await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data);
-                }
-                break;
-
-            case SubscriptionType.ALLIANCE:
-                if (data.victim.alliance_id === subscription.id) {
-                    requireSend = true;
-                    color = 'RED';
-                }
-                if (!requireSend) {
-                    for (const attacker of data.attackers) {
-                        if (attacker.alliance_id === subscription.id) {
-                            requireSend = true;
-                            break;
-                        }
-                    }
-                }
-                if (requireSend) {
-                    if (subscription.limitTypes.size !== 0 && !await this.isInLocationLimit(subscription, data.solar_system_id)) {
-                        return;
-                    }
-                    await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data, subscription.id, color);
-                }
-                break;
-
-            case SubscriptionType.CORPORATION:
-                if (data.victim.corporation_id === subscription.id) {
-                    requireSend = true;
-                    color = 'RED';
-                }
-                if (!requireSend) {
-                    for (const attacker of data.attackers) {
-                        if (attacker.corporation_id === subscription.id) {
-                            requireSend = true;
-                            break;
-                        }
-                    }
-                }
-                if (requireSend) {
-                    if (subscription.limitTypes.size !== 0 && !await this.isInLocationLimit(subscription, data.solar_system_id)) {
-                        return;
-                    }
-                    await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data, subscription.id, color);
-                }
-                break;
-
-            case SubscriptionType.CHARACTER:
-                if (data.victim.character_id === subscription.id) {
-                    requireSend = true;
-                    color = 'RED';
-                }
-                if (!requireSend) {
-                    for (const attacker of data.attackers) {
-                        if (attacker.character_id === subscription.id) {
-                            requireSend = true;
-                            break;
-                        }
-                    }
-                }
-                if (requireSend) {
-                    if (subscription.limitTypes.size !== 0 && !await this.isInLocationLimit(subscription, data.solar_system_id)) {
-                        return;
-                    }
-                    await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data, subscription.id, color);
-                }
-                break;
-            default:
+        case SubscriptionType.CHARACTER:
+            if (data.victim.character_id === subscription.id) {
+                requireSend = true;
+                color = 'RED';
             }
-
-        } catch (e) {
-            console.log(e);
+            if (!requireSend) {
+                for (const attacker of data.attackers) {
+                    if (attacker.character_id === subscription.id) {
+                        requireSend = true;
+                        break;
+                    }
+                }
+            }
+            if (requireSend) {
+                if (subscription.limitTypes.size !== 0 && !await this.isInLocationLimit(subscription, data.solar_system_id)) {
+                    return;
+                }
+                await this.sendMessageToDiscord(guildId, channelId, subscription.subType, data, subscription.id, color);
+            }
+            break;
+        default:
         }
     }
 
