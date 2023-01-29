@@ -51,10 +51,18 @@ export class UnsubscribeCommand extends AbstractCommand {
             ));
 
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('group')
-            .setDescription('Unsubscribe character from channel')
+            .setDescription('Unsubscribe group from channel')
             .addNumberOption(option =>
                 option.setName('id')
                     .setDescription('ID for the character')
+                    .setRequired(true)
+            ));
+
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('ship')
+            .setDescription('Unsubscribe ship from channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the ship')
                     .setRequired(true)
             ));
 

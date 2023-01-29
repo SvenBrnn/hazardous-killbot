@@ -143,6 +143,20 @@ export class SubscribeCommand extends AbstractCommand {
                     .setRequired(false)
             ));
 
+        slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('ship')
+            .setDescription('Subscribe ship to channel')
+            .addNumberOption(option =>
+                option.setName('id')
+                    .setDescription('ID for the group')
+                    .setRequired(true)
+
+            )
+            .addNumberOption(option =>
+                option.setName('min-value')
+                    .setDescription('Minimum isk to show the entry')
+                    .setRequired(false)
+            ));
+
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('region')
             .setDescription('Subscribe character to channel')
             .addNumberOption(option =>

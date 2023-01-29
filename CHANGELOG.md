@@ -1,3 +1,10 @@
+2023-01-29
+---
+
+- add new functionality to subscribe to a ship type
+- bot will restart itself after a disconnect or error (thanks for https://github.com/ocn for the code idea)
+- __attention: new commands will roll out within 24 hours__
+
 2022-09-25
 ---
 

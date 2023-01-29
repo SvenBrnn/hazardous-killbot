@@ -16,7 +16,8 @@ export enum SubscriptionType {
     corporation = 'corporation',
     ALLIANCE = 'alliance',
     CHARACTER = 'character',
-    GROUP = 'group'
+    GROUP = 'group',
+    SHIP = 'ship'
 }
 
 export enum LimitType {
@@ -53,7 +54,6 @@ export interface SolarSystem {
 export class ZKillSubscriber {
     protected static instance : ZKillSubscriber;
     protected doClient: Client;
-    protected websocket: WebSocket;
 
     protected subscriptions: Map<string, SubscriptionGuild>;
     protected systems: Map<number, SolarSystem>;
@@ -75,18 +75,28 @@ export class ZKillSubscriber {
 
         this.doClient = client;
         this.rest = new REST({ version: '9' }).setToken(process.env.DISCORD_BOT_TOKEN || '');
+        this.connect(this, client);
+    }
 
-        this.websocket = new WebSocket('wss://zkillboard.com/websocket/');
-        this.websocket.onmessage = this.onMessage.bind(this);
+    private connect(sub: ZKillSubscriber, client: Client) {
+        const websocket = new WebSocket('wss://zkillboard.com/websocket/');
+        websocket.onmessage = sub.onMessage.bind(sub);
 
-        this.websocket.onopen = () => {
-            this.websocket.send(JSON.stringify({
+        websocket.onopen = () => {
+            websocket.send(JSON.stringify({
                 'action':'sub',
                 'channel': 'killstream'
             }));
         };
-        this.websocket.onclose = () => {
-            process.exit(0);
+        websocket.onclose = (e : CloseEvent) => {
+            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+            setTimeout(function() {
+                ZKillSubscriber.getInstance(client).connect(sub, client);
+            }, 1000);
+        };
+        websocket.onerror = (error: Error) => {
+            console.error('Socket encountered error: ', error.message, 'Closing socket');
+            websocket.close();
         };
     }
 
@@ -195,6 +205,30 @@ export class ZKillSubscriber {
                                     if(attacker.ship_type_id) {
                                         groupId = await this.getShipGroup(attacker.ship_type_id);
                                         if (groupId === subscription.id) {
+                                            requireSend = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (requireSend) {
+                                if(subscription.limitType !== LimitType.NONE && !await this.isInLimit(subscription, data.solar_system_id)) {
+                                    return;
+                                }
+                                await this.sendKill(guildId, channelId, subscription.subType, data, subscription.id, color);
+                            }
+                            break;
+                        case SubscriptionType.SHIP:
+                            if(data.victim.ship_type_id) {
+                                if (data.victim.ship_type_id === subscription.id) {
+                                    requireSend = true;
+                                    color = 'RED';
+                                }
+                            }
+                            if (!requireSend) {
+                                for (const attacker of data.attackers) {
+                                    if(attacker.ship_type_id) {
+                                        if (attacker.ship_type_id === subscription.id) {
                                             requireSend = true;
                                             break;
                                         }

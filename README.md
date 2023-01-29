@@ -20,6 +20,7 @@ The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/)
 | /zkill-subscribe constellation [id] ([min-vaue]) | Make bot post kills of constellation with id [id] ([min-value] is optional minimal amout of isk) |
 | /zkill-subscribe system [id] ([min-vaue])        | Make bot post kills of system with id [id] ([min-value] is optional minimal amout of isk)        |
 | /zkill-subscribe group [id] ([min-vaue])         | Make bot post kills of ship group with id [id] ([min-value] is optional minimal amout of isk)    |
+| /zkill-subscribe ship [id] ([min-vaue])          | Make bot post kills of ship with id [id] ([min-value] is optional minimal amout of isk)          |
 | /zkill-subscribe public ([min-vaue])             | Make bot post kills the public feed ([min-value] is optional minimal amout of isk)               |
 | /zkill-unsubscribe corporation [id]              | Make the bot not post any kills for corporation [id] anymore                                     |
 | /zkill-unsubscribe alliance [id]                 | Make the bot not post any kills for alliance [id] anymore                                        |
@@ -28,6 +29,7 @@ The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/)
 | /zkill-unsubscribe constellation [id]            | Make the bot not post any kills for constellation [id] anymore                                   |
 | /zkill-unsubscribe system [id]                   | Make the bot not post any kills for system [id] anymore                                          |
 | /zkill-unsubscribe group [id]                    | Make the bot not post any kills for ship group [id] anymore                                      |
+| /zkill-unsubscribe ship [id]                     | Make the bot not post any kills for ship [id] anymore                                            |
 | /zkill-unsubscribe public                        | Make the bot not post any kills of the public feed anymore                                       |
 | /zkill-unsubscribe all                           | Make the bot not post any on this channel anymore                                                |
 
