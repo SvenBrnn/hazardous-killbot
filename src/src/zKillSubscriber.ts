@@ -88,13 +88,13 @@ export class ZKillSubscriber {
                 'channel': 'killstream'
             }));
         };
-        websocket.onclose = (e : CloseEvent) => {
+        websocket.onclose = (e : any) => {
             console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
             setTimeout(function() {
                 ZKillSubscriber.getInstance(client).connect(sub, client);
             }, 1000);
         };
-        websocket.onerror = (error: Error) => {
+        websocket.onerror = (error: any) => {
             console.error('Socket encountered error: ', error.message, 'Closing socket');
             websocket.close();
         };
