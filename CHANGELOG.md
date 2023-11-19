@@ -1,3 +1,10 @@
+2023-11-19
+---
+
+- added new functionality to filter by kill type (kill/loss)
+- __attention: new command filters will roll out within 24 hours__
+
+
 2023-01-29
 ---
 

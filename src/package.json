@@ -31,6 +31,6 @@
   "scripts": {
     "start": "cd dist && node index",
     "build": "yarn eslint . && ./node_modules/typescript/bin/tsc",
-    "start.dev": "yarn && nodemon --ignore ./dist -e ts,twig,html,jpg,png,gif,svg,json --exec \"(yarn eslint . && ./node_modules/typescript/bin/tsc && cd dist && node index) || exit 1\""
+    "start.dev": "yarn && nodemon --ignore ./dist -e ts,twig,html,jpg,png,gif,svg --exec \"(yarn eslint . && ./node_modules/typescript/bin/tsc && cd dist && node index) || exit 1\""
   }
 }

@@ -1,63 +1,82 @@
 import {SlashCommandBuilder, SlashCommandSubcommandBuilder} from '@discordjs/builders';
 import {CommandInteraction} from 'discord.js';
+import {APIApplicationCommandOptionChoice} from 'discord-api-types/v10';
 import {AbstractCommand} from './abstractCommand';
-import {LimitType, SubscriptionType, ZKillSubscriber} from '../zKillSubscriber';
+import {KillType, LimitType, SubscriptionType, ZKillSubscriber} from '../zKillSubscriber';
 
 export class SubscribeCommand extends AbstractCommand {
     protected name = 'zkill-subscribe';
 
     executeCommand(interaction: CommandInteraction): void {
-        const sub = ZKillSubscriber.getInstance();
-        if(!interaction.inGuild()) {
-            interaction.reply('Subscription is not possible in PM!');
-            return;
-        }
-        const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
-        const id = interaction.options.getNumber('id', false);
-        const minValue = interaction.options.getNumber('min-value');
-        const limitRegion = interaction.options.getString('limit-region-ids');
-        const limitConstellation = interaction.options.getString('limit-constellation-ids');
-        const limitSystem = interaction.options.getString('limit-system-ids');
-
-        let reply = 'We subscribed to zkillboard channel: ' + interaction.options.getSubcommand();
-        let limitType: LimitType = LimitType.NONE, limitIds;
-        if(limitConstellation || limitRegion || limitSystem) {
-            if(limitConstellation && limitRegion || limitConstellation && limitSystem || limitRegion && limitSystem) {
-                interaction.reply({content: 'Only one type of limit is allowed!', ephemeral: true});
+        try {
+            const sub = ZKillSubscriber.getInstance();
+            if (!interaction.inGuild()) {
+                interaction.reply('Subscription is not possible in PM!');
                 return;
             }
-            if(limitRegion) {
-                limitType = LimitType.REGION;
-                limitIds = limitRegion;
-                reply = 'Region filter: + ' + limitRegion;
-            }
-            if(limitConstellation) {
-                limitType = LimitType.CONSTELLATION;
-                limitIds = limitConstellation;
-                reply = 'Constellation filter: + ' + limitRegion;
-            }
-            if(limitSystem) {
-                limitType = LimitType.SYSTEM;
-                limitIds = limitSystem;
-                reply = 'System filter: + ' + limitRegion;
+            const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
+            const id = interaction.options.getNumber('id', false);
+            const minValue = interaction.options.getNumber('min-value');
+            const limitRegion = interaction.options.getString('limit-region-ids');
+            const limitConstellation = interaction.options.getString('limit-constellation-ids');
+            const limitSystem = interaction.options.getString('limit-system-ids');
+            const killType = interaction.options.getString('type-filter') !== null ? interaction.options.getString('type-filter') as KillType : undefined;
 
-            }
-        }
-        sub.subscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined, minValue ? minValue : 0, limitType, limitIds);
+            let reply = 'We subscribed to zkillboard channel: ' + interaction.options.getSubcommand();
+            let limitType: LimitType = LimitType.NONE, limitIds;
+            if (limitConstellation || limitRegion || limitSystem) {
+                if (limitConstellation && limitRegion || limitConstellation && limitSystem || limitRegion && limitSystem) {
+                    interaction.reply({content: 'Only one type of limit is allowed!', ephemeral: true});
+                    return;
+                }
+                if (limitRegion) {
+                    limitType = LimitType.REGION;
+                    limitIds = limitRegion;
+                    reply = 'Region filter: + ' + limitRegion;
+                }
+                if (limitConstellation) {
+                    limitType = LimitType.CONSTELLATION;
+                    limitIds = limitConstellation;
+                    reply = 'Constellation filter: + ' + limitRegion;
+                }
+                if (limitSystem) {
+                    limitType = LimitType.SYSTEM;
+                    limitIds = limitSystem;
+                    reply = 'System filter: + ' + limitRegion;
 
-        if(id) {
-            reply += ' ID: ' + id;
+                }
+            }
+            sub.subscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined, minValue ? minValue : 0, limitType, limitIds, killType);
+
+            if (killType) {
+                reply += ' Kill Type: ' + killType;
+            }
+            if (id) {
+                reply += ' ID: ' + id;
+            }
+            if (minValue) {
+                reply += ' Min Value: ' + minValue.toLocaleString('en');
+            }
+            interaction.reply({content: reply, ephemeral: true});
+        } catch (e) {
+            interaction.reply({content: 'Something went wrong!', ephemeral: true});
+            console.log(e);
         }
-        if(minValue) {
-            reply += ' Min Value: ' + minValue.toLocaleString('en');
-        }
-        interaction.reply({content: reply, ephemeral: true});
     }
 
     getCommand(): SlashCommandBuilder {
         const slashCommand = new SlashCommandBuilder().setName(this.name)
             .setDescription('Subscribe to zkill');
 
+        const filterTypes : APIApplicationCommandOptionChoice<string>[] = [
+            {
+                name: 'Kills only',
+                value: KillType.KILLS
+            },
+            {
+                name: 'Losses only',
+                value: KillType.LOSSES
+            }];
 
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('corporation')
             .setDescription('Subscribe corporation to channel')
@@ -85,6 +104,11 @@ export class SubscribeCommand extends AbstractCommand {
                 option.setName('min-value')
                     .setDescription('Minimum isk to show the entry')
                     .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName('type-filter')
+                    .setDescription('Filter the types of kills you want to get')
+                    .addChoices(...filterTypes)
             ));
 
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('alliance')
@@ -113,6 +137,11 @@ export class SubscribeCommand extends AbstractCommand {
                 option.setName('min-value')
                     .setDescription('Minimum isk to show the entry')
                     .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName('type-filter')
+                    .setDescription('Filter the types of kills you want to get')
+                    .addChoices(...filterTypes)
             ));
 
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('character')
@@ -127,6 +156,11 @@ export class SubscribeCommand extends AbstractCommand {
                 option.setName('min-value')
                     .setDescription('Minimum isk to show the entry')
                     .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName('type-filter')
+                    .setDescription('Filter the types of kills you want to get')
+                    .addChoices(...filterTypes)
             ));
 
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('group')
@@ -141,6 +175,11 @@ export class SubscribeCommand extends AbstractCommand {
                 option.setName('min-value')
                     .setDescription('Minimum isk to show the entry')
                     .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName('type-filter')
+                    .setDescription('Filter the types of kills you want to get')
+                    .addChoices(...filterTypes)
             ));
 
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('ship')
@@ -155,6 +194,11 @@ export class SubscribeCommand extends AbstractCommand {
                 option.setName('min-value')
                     .setDescription('Minimum isk to show the entry')
                     .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName('type-filter')
+                    .setDescription('Filter the types of kills you want to get')
+                    .addChoices(...filterTypes)
             ));
 
         slashCommand.addSubcommand( new SlashCommandSubcommandBuilder().setName('region')

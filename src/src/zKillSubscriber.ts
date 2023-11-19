@@ -27,6 +27,11 @@ export enum LimitType {
     NONE = 'none'
 }
 
+export enum KillType {
+    KILLS = 'kills',
+    LOSSES = 'losses'
+}
+
 interface SubscriptionGuild {
     channels: Map<string, SubscriptionChannel>
 }
@@ -41,6 +46,7 @@ interface Subscription {
     minValue: number,
     limitType: LimitType
     limitIds?: string
+    killType?: KillType
 }
 
 export interface SolarSystem {
@@ -134,13 +140,13 @@ export class ZKillSubscriber {
                             break;
                         case SubscriptionType.ALLIANCE:
                             if (data.victim.alliance_id === subscription.id) {
-                                requireSend = true;
+                                requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
                                 color = 'RED';
                             }
                             if (!requireSend) {
                                 for (const attacker of data.attackers) {
                                     if (attacker.alliance_id === subscription.id) {
-                                        requireSend = true;
+                                        requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
                                         break;
                                     }
                                 }
@@ -154,13 +160,13 @@ export class ZKillSubscriber {
                             break;
                         case SubscriptionType.corporation:
                             if (data.victim.corporation_id === subscription.id) {
-                                requireSend = true;
+                                requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
                                 color = 'RED';
                             }
                             if (!requireSend) {
                                 for (const attacker of data.attackers) {
                                     if (attacker.corporation_id === subscription.id) {
-                                        requireSend = true;
+                                        requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
                                         break;
                                     }
                                 }
@@ -174,13 +180,13 @@ export class ZKillSubscriber {
                             break;
                         case SubscriptionType.CHARACTER:
                             if (data.victim.character_id === subscription.id) {
-                                requireSend = true;
+                                requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
                                 color = 'RED';
                             }
                             if (!requireSend) {
                                 for (const attacker of data.attackers) {
                                     if (attacker.character_id === subscription.id) {
-                                        requireSend = true;
+                                        requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
                                         break;
                                     }
                                 }
@@ -196,7 +202,7 @@ export class ZKillSubscriber {
                             if(data.victim.ship_type_id) {
                                 groupId = await this.getShipGroup(data.victim.ship_type_id);
                                 if (groupId === subscription.id) {
-                                    requireSend = true;
+                                    requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
                                     color = 'RED';
                                 }
                             }
@@ -205,7 +211,7 @@ export class ZKillSubscriber {
                                     if(attacker.ship_type_id) {
                                         groupId = await this.getShipGroup(attacker.ship_type_id);
                                         if (groupId === subscription.id) {
-                                            requireSend = true;
+                                            requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
                                             break;
                                         }
                                     }
@@ -221,7 +227,7 @@ export class ZKillSubscriber {
                         case SubscriptionType.SHIP:
                             if(data.victim.ship_type_id) {
                                 if (data.victim.ship_type_id === subscription.id) {
-                                    requireSend = true;
+                                    requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
                                     color = 'RED';
                                 }
                             }
@@ -229,7 +235,7 @@ export class ZKillSubscriber {
                                 for (const attacker of data.attackers) {
                                     if(attacker.ship_type_id) {
                                         if (attacker.ship_type_id === subscription.id) {
-                                            requireSend = true;
+                                            requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
                                             break;
                                         }
                                     }
@@ -333,7 +339,7 @@ export class ZKillSubscriber {
         return this.instance;
     }
 
-    public subscribe(subType: SubscriptionType, guildId: string, channel: string, id?: number, minValue = 0, limitType: LimitType = LimitType.NONE, limitIds?: string) {
+    public subscribe(subType: SubscriptionType, guildId: string, channel: string, id?: number, minValue = 0, limitType: LimitType = LimitType.NONE, limitIds?: string, killType?: KillType) {
         if(!this.subscriptions.has(guildId)) {
             this.subscriptions.set(guildId, {channels: new Map<string, SubscriptionChannel>()});
         }
@@ -343,9 +349,8 @@ export class ZKillSubscriber {
         }
         const guildChannel = guild?.channels.get(channel);
         const ident = `${subType}${id?id:''}`;
-        if(!guildChannel?.subscriptions.has(ident)) {
-            guildChannel?.subscriptions.set(ident, {subType, id, minValue, limitType, limitIds});
-        }
+        guildChannel?.subscriptions.set(ident, {subType, id, minValue, limitType, limitIds, killType});
+
         fs.writeFileSync('./config/' + guildId + '.json', JSON.stringify(this.generateObject(guild)), 'utf8');
     }
 
