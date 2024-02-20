@@ -1,5 +1,5 @@
 # hazardous-killbot
-[](./docs/partner.webp)
+![](./docs/partner.webp)
 
 [Invite the Bot to your Server!](https://discord.com/api/oauth2/authorize?client_id=981835348030160948&permissions=274877925376&scope=bot%20applications.commands)
 
