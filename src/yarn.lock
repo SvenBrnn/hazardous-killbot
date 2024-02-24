@@ -172,7 +172,7 @@
   resolved "https://registry.yarnpkg.com/@sapphire/snowflake/-/snowflake-3.5.3.tgz#0c102aa2ec5b34f806e9bc8625fc6a5e1d0a0c6a"
   integrity sha512-jjmJywLAFoWeBi1W7994zZyiNWPIiqRRNAmSERxyg93xRGzNYvGjlZ0gR6x0F4gPRi2+0O6S71kOZYyr3cxaIQ==
 
-"@types/async-lock@^1.4.2å":
+"@types/async-lock@^1.4.2":
   version "1.4.2"
   resolved "https://registry.yarnpkg.com/@types/async-lock/-/async-lock-1.4.2.tgz#c2037ba1d6018de766c2505c3abe3b7b6b244ab4"
   integrity sha512-HlZ6Dcr205BmNhwkdXqrg2vkFMN2PluI7Lgr8In3B3wE5PiQHhjRqtW/lGdVU9gw+sM0JcIDx2AN+cW8oSWIcw==

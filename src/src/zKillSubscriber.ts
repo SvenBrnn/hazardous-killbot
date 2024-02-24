@@ -278,21 +278,14 @@ export class ZKillSubscriber {
                 }
                 try {
                     const content: MessageCreateOptions = {};
+                    const image = embedding?.result.ogImage ? embedding?.result.ogImage[0].url : '';
                     if (embedding?.error === false) {
                         content.embeds = [{
                             title: embedding?.result.ogTitle,
                             description: embedding?.result.ogDescription,
-                            thumbnail: {
-                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                // @ts-ignore
-                                url: embedding?.result.ogImage?.url,
-                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                // @ts-ignore
-                                height: embedding?.result.ogImage?.height,
-                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                // @ts-ignore
-                                width: embedding?.result.ogImage?.width,
-                            },
+                            thumbnail: image ? {
+                                url: image,
+                            } : undefined,
                             url: data.zkb.url,
                             color: messageColor,
                         }];
