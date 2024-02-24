@@ -1,4 +1,4 @@
-FROM node:16-alpine
+FROM node:20-alpine
 
 # Create app directory
 RUN mkdir -p /usr/src/app && yarn global add nodemon

@@ -1,12 +1,12 @@
 // Require the necessary discord.js classes
-import { Client, Intents } from 'discord.js';
-import {registerCommands} from './commands/deployCommands';
-import {ZKillSubscriber} from './zKillSubscriber';
+import { Client, IntentsBitField } from 'discord.js';
+import { registerCommands } from './commands/deployCommands';
+import { ZKillSubscriber } from './zKillSubscriber';
 
 process.setMaxListeners(100);
 
 // Create a new client instance
-const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const client = new Client({ intents: [IntentsBitField.Flags.Guilds] });
 
 registerCommands(client);
 const sub = ZKillSubscriber.getInstance(client);
@@ -17,18 +17,18 @@ client.once('ready', () => {
 });
 
 client.on('guildDelete', guild => {
-    if(guild.name === undefined) return;
+    if (guild.name === undefined) return;
     sub.unsubscribeGuild(guild.id);
 
     console.log(`Got kicked from a Server!\n- Name: ${guild.name}\n- Member Count: ${guild.memberCount}\nI'm now in ${client.guilds.cache.size} Servers!`);
 });
 
-//joined a server
+//  joined a server
 client.on('guildCreate', guild => {
-    if(guild.name === undefined) return;
+    if (guild.name === undefined) return;
 
     console.log(`Joined new Server!\n- Name: ${guild.name}\n- Member Count: ${guild.memberCount}\nI'm now in ${client.guilds.cache.size} Servers!`);
-    //Your other stuff like adding to guildArray
+    //  Your other stuff like adding to guildArray
 });
 
 // Login to Discord with your client's token

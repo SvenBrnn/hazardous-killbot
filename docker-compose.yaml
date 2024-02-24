@@ -4,7 +4,7 @@ services:
     build:
       context: docker/nodejs/docker-dev
       dockerfile: Dockerfile
-    image: nodejs-dev:16-alpine
+    image: nodejs-dev:20-alpine
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}

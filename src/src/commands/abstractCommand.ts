@@ -1,8 +1,8 @@
-import {SlashCommandBuilder} from '@discordjs/builders';
-import {CommandInteraction} from 'discord.js';
+import { SlashCommandBuilder } from '@discordjs/builders';
+import { CommandInteraction } from 'discord.js';
 
-export abstract class AbstractCommand  {
-    protected name  = '';
+export abstract class AbstractCommand {
+    protected name = '';
 
     public getName() : string {
         return this.name;

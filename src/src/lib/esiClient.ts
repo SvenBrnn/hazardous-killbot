@@ -1,5 +1,5 @@
-import {Axios, AxiosResponse} from 'axios';
-import {SolarSystem} from '../zKillSubscriber';
+import { Axios, AxiosResponse } from 'axios';
+import { SolarSystem } from '../zKillSubscriber';
 
 const ESI_URL = 'https://esi.evetech.net/latest/';
 const GET_SOLAR_SYSTEM_URL = 'universe/systems/%1/';
@@ -11,7 +11,7 @@ export class EsiClient {
     private axios: Axios;
 
     constructor() {
-        this.axios = new Axios({baseURL: ESI_URL, responseType: 'json', transformResponse: data => JSON.parse(data)});
+        this.axios = new Axios({ baseURL: ESI_URL, responseType: 'json', transformResponse: data => JSON.parse(data) });
     }
 
     async fetch(path: string) : Promise<AxiosResponse<any, any>> {
@@ -20,15 +20,15 @@ export class EsiClient {
 
     async getSystemInfo(systemId: number): Promise<SolarSystem> {
         const systemData = await this.fetch(GET_SOLAR_SYSTEM_URL.replace('%1', systemId.toString()));
-        if(systemData.data.error) {
+        if (systemData.data.error) {
             throw new Error('SYSTEM_FETCH_ERROR');
         }
         const constData = await this.fetch(GET_CONSTELLATION_URL.replace('%1', systemData.data.constellation_id));
-        if(systemData.data.error) {
+        if (systemData.data.error) {
             throw new Error('CONST_FETCH_ERROR');
         }
         const regionData = await this.fetch(GET_REGION_URL.replace('%1', constData.data.region_id));
-        if(systemData.data.error) {
+        if (systemData.data.error) {
             throw new Error('REGION_FETCH_ERROR');
         }
 
@@ -37,13 +37,13 @@ export class EsiClient {
             regionId: regionData.data.region_id,
             regionName: regionData.data.name,
             constellationId: constData.data.constellation_id,
-            constellationName: constData.data.name
+            constellationName: constData.data.name,
         };
     }
 
     async getTypeGroupId(shipId: number): Promise<number> {
         const itemData = await this.fetch(GET_TYPE_DATA_URL.replace('%1', shipId.toString()));
-        if(itemData.data.error) {
+        if (itemData.data.error) {
             throw new Error('ITEM_FETCH_ERROR');
         }
         return Number.parseInt(itemData.data.group_id);

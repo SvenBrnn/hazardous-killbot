@@ -1,19 +1,19 @@
-import {Client} from 'discord.js';
+import { Client } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
-import {SubscribeCommand} from './subscribeCommand';
-import {AbstractCommand} from './abstractCommand';
-import {UnsubscribeCommand} from './unsubscribeCommand';
+import { SubscribeCommand } from './subscribeCommand';
+import { AbstractCommand } from './abstractCommand';
+import { UnsubscribeCommand } from './unsubscribeCommand';
 
 const commands: AbstractCommand[] = [
     new SubscribeCommand(),
-    new UnsubscribeCommand()
+    new UnsubscribeCommand(),
 ];
 
-export function registerCommands (client: Client) {
+export function registerCommands(client: Client) {
     const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_BOT_TOKEN || '');
 
-    /*rest.get(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID))
+    /* rest.get(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID))
         // @ts-ignore
         .then(data => {
             const promises = [];
@@ -39,7 +39,7 @@ export function registerCommands (client: Client) {
         return Promise.all(promises);
     });**/
 
-    rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID || '' ), { body: commands.map(command => command.getCommand().toJSON()) })
+    rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID || ''), { body: commands.map(command => command.getCommand().toJSON()) })
         .then(() => console.log('Successfully registered application commands.'))
         .catch(console.error);
 
@@ -48,8 +48,8 @@ export function registerCommands (client: Client) {
     client.once('ready', () => {
         client.on('interactionCreate', interaction => {
             if (!interaction.isCommand()) return;
-            for(const command of commands) {
-                if(command.getName() === interaction.commandName) {
+            for (const command of commands) {
+                if (command.getName() === interaction.commandName) {
                     command.executeCommand(interaction);
                     break;
                 }

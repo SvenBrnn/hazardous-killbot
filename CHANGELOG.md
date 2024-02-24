@@ -1,3 +1,13 @@
+2024-02-24
+---
+
+- added new functionality to filter groups and ships by region, constellation, and system
+- update nodejs to 20
+- update discordjs to 14
+- update all other dependencies
+- add new eslint rules
+- __attention: new command filters will roll out within 24 hours__
+
 2023-11-19
 ---
 
