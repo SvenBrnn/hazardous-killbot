@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@types/open-graph-scraper": "^4.8.5",
-    "@types/async-lock": "^1.4.2å",
+    "@types/async-lock": "^1.4.2",
     "@types/memory-cache": "^0.2.5",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
