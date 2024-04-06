@@ -21,6 +21,6 @@ export async function initializeQueueDashboard(queue: Queue) {
 
     app.listen(3000, () => {
         console.log('Running on 3000...');
-        console.log('For the UI, open http://localhost:3000/');
+        console.log('For the UI, open http://localhost:4000/');
     });
 }

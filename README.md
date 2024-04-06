@@ -57,7 +57,7 @@ Open your corp/char/alliance page on zkillboard and copy the number at the end o
  
 - run `copy the env.sample to .env and fill out params`
 - run either `docker-compose -f ./docker-compose.prod.yaml up` or `docker-compose -f ./docker-compose.prod-noredis.yaml up`
-- if redis is enabled you can open the dashboard at `http://localhost:3000`
+- if redis is enabled you can open the dashboard at `http://localhost:4000`
 
 ### Build (prod):
  
