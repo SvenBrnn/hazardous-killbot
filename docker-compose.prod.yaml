@@ -17,7 +17,11 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: redis
+    # volume for redis data
+    volumes:
+      - ./redis-data:/data
+    # Make sure redis saves snapshots to disk
+    command: redis-server --appendonly yes
 
 networks:
   default:
