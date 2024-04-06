@@ -8,8 +8,19 @@ services:
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      USE_REDIS: ${USE_REDIS}
     volumes:
       - ./src:/usr/src/app:delegated
+    ports:
+      - "3000:3000"
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - default
 
 networks:
   default:

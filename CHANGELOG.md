@@ -1,3 +1,10 @@
+2024-04-06
+---
+
+- add bullmq for queueing messages to prevent rate limiting of discord api and asyncQueue (optional)
+- add redis as requirement for bullmq
+- when bullmq is enabled, sending will be retried up to 10 times
+
 2024-02-24
 ---
 

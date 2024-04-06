@@ -1,11 +1,13 @@
-import { Client, Colors, DiscordAPIError, MessageCreateOptions, TextChannel } from 'discord.js';
+import { Client, Colors } from 'discord.js';
 import { MessageEvent, WebSocket } from 'ws';
 import { REST } from '@discordjs/rest';
 import AsyncLock from 'async-lock';
-import MemoryCache from 'memory-cache';
-import ogs from 'open-graph-scraper';
+import { Queue, Worker } from 'bullmq';
+import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import { EsiClient } from './lib/esiClient';
+import { sendKillMailToDiscord } from './lib/sendKill';
+import { initializeQueueDashboard } from './lib/queueDashboard';
 
 export enum SubscriptionType {
     ALL = 'all',
@@ -69,6 +71,9 @@ export class ZKillSubscriber {
     protected asyncLock: AsyncLock;
     protected esiClient: EsiClient;
 
+    protected worker? : Worker;
+    protected queue? : Queue;
+
     protected constructor(client: Client) {
         this.asyncLock = new AsyncLock({ maxPending: 10000 });
         this.esiClient = new EsiClient();
@@ -78,6 +83,30 @@ export class ZKillSubscriber {
         this.loadConfig();
         this.loadSystems();
         this.loadShips();
+
+        if (process.env.USE_REDIS == 'true') {
+            // Initialize the worker
+            this.worker = new Worker('zkillboard', async (job) => {
+                const data = job.data;
+                await sendKillMailToDiscord(this, data.guildId, data.channelId, data.subType, data.data, data.subId, data.messageColor);
+            }, {
+                connection: {
+                    host: 'redis',
+                    port: 6379,
+                },
+            });
+
+            // Initialize the queue
+            this.queue = new Queue('zkillboard', {
+                connection: {
+                    host: 'redis',
+                    port: 6379,
+                },
+            });
+
+            // initialize the dashboard
+            initializeQueueDashboard(this.queue);
+        }
 
         this.doClient = client;
         this.rest = new REST({ version: '9' }).setToken(process.env.DISCORD_BOT_TOKEN || '');
@@ -260,70 +289,30 @@ export class ZKillSubscriber {
     }
 
     private async sendKill(guildId: string, channelId: string, subType: SubscriptionType, data: any, subId?: number, messageColor: number = Colors.Grey) {
+        if (this.queue) {
+            await this.queue.add(
+                'zkillboard',
+                { guildId, channelId, subType, data, subId, messageColor },
+                {
+                    jobId: uuidv4(),
+                    removeOnComplete: {
+                        age: 300,
+                    }, // Automatically remove the job after 30 seconds
+                    backoff: {
+                        type: 'fixed',
+                        delay: 60000, // Wait 1 minute before retrying
+                    },
+                    attempts: 10, // Retry 10 times
+                    removeOnFail: {
+                        age: 86400,
+                    }, // Remove after 24 hours
+                },
+            );
+            return;
+        }
+
         await this.asyncLock.acquire('sendKill', async (done) => {
-            const cache = MemoryCache.get(`${channelId}_${data.killmail_id}`);
-            // Mail was already send, prevent from sending twice
-            if (cache) {
-                done();
-                return;
-            }
-            const c = <TextChannel> await this.doClient.channels.cache.get(channelId);
-            if (c) {
-                let embedding = null;
-                try {
-                    embedding = await ogs({ url: data.zkb.url });
-                }
-                catch (e) {
-                    // Do nothing
-                }
-                try {
-                    const content: MessageCreateOptions = {};
-                    const image = embedding?.result.ogImage ? embedding?.result.ogImage[0].url : '';
-                    if (embedding?.error === false) {
-                        content.embeds = [{
-                            title: embedding?.result.ogTitle,
-                            description: embedding?.result.ogDescription,
-                            thumbnail: image ? {
-                                url: image,
-                            } : undefined,
-                            url: data.zkb.url,
-                            color: messageColor,
-                        }];
-                    }
-                    else {
-                        content.content = data.zkb.url;
-                    }
-                    await c.send(
-                        content,
-                    );
-                    MemoryCache.put(`${channelId}_${data.killmail_id}`, 'send', 60000); // Prevent from sending again, cache it for 1 min
-                }
-                catch (e) {
-                    if (e instanceof DiscordAPIError && e.status === 403) {
-                        try {
-                            const owner = await c.guild.fetchOwner();
-                            await owner.send(`The bot unsubscribed from channel ${c.name} on ${c.guild.name} because it was not able to write in it! Fix the permissions and subscribe again!`);
-                            console.log(`Sent message to owner of ${c.guild.name} to notify him/her about the permission problem.`);
-                        }
-                        catch (e2) {
-                            console.log(e2);
-                        }
-                        const subscriptionsInChannel = this.subscriptions.get(guildId)?.channels.get(channelId);
-                        if (subscriptionsInChannel) {
-                            // Unsubscribe all events from channel
-                            subscriptionsInChannel.subscriptions.forEach((subscription) => {
-                                this.unsubscribe(subscription.subType, guildId, channelId, subscription.id);
-                            });
-                        }
-                    }
-                    else {
-                        console.log(e);
-                    }
-                }
-            }
-            else {
-                await this.unsubscribe(subType, guildId, channelId, subId);
-            }
+            await sendKillMailToDiscord(this, guildId, channelId, subType, data, subId, messageColor);
             done();
         });
 
@@ -503,5 +492,13 @@ export class ZKillSubscriber {
             return true;
         }
         return subscription.limitType === LimitType.REGION && limit.indexOf(systemData.regionId.toString()) !== -1;
+    }
+
+    getSubscriptions(guildId: string): SubscriptionGuild | undefined {
+        return this.subscriptions.get(guildId);
+    }
+
+    getDoClient(): Client {
+        return this.doClient;
     }
 }

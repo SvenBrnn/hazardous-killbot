@@ -9,15 +9,9 @@ services:
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
-      USE_REDIS: true
+      USE_REDIS: false
     volumes:
       - ./config:/workspace/dist/config:delegated
-    ports:
-      - "127.0.0.1:3000:3000"
-
-  redis:
-    image: redis:alpine
-    container_name: redis
 
 networks:
   default:
