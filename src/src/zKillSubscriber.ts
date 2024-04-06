@@ -94,7 +94,7 @@ export class ZKillSubscriber {
                     host: 'redis',
                     port: 6379,
                 },
-                concurrency: 10
+                concurrency: 10,
             });
 
             // Initialize the queue
