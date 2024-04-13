@@ -9,7 +9,6 @@ services:
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
-      USE_REDIS: true
     volumes:
       - ./config:/workspace/dist/config:delegated
     ports:
@@ -22,6 +21,13 @@ services:
       - ./redis-data:/data
     # Make sure redis saves snapshots to disk
     command: redis-server --appendonly yes
+
+  mongodb:
+    image: mongo:7.0.8
+    volumes:
+      - ./mongo-data:/data/db
+    ports:
+      - "127.0.0.1:27017:27017"
 
 networks:
   default:

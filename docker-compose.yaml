@@ -8,11 +8,10 @@ services:
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
-      USE_REDIS: ${USE_REDIS}
     volumes:
       - ./src:/usr/src/app:delegated
     ports:
-      - "3000:3000"
+      - "4000:4000"
 
   redis:
     image: redis:alpine
@@ -21,6 +20,13 @@ services:
       - "6379:6379"
     networks:
       - default
+
+  mongodb:
+    image: mongo:7.0.8
+    volumes:
+      - ./mongo-data:/data/db
+    ports:
+      - "127.0.0.1:27017:27017"
 
 networks:
   default:

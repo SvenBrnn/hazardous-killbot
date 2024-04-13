@@ -1,3 +1,11 @@
+2024-04-13
+---
+
+- the bot now uses a mongodb to store/cache data required to render killmails
+- redis is now required for running the bot
+- the bot will now fetch all data required to render a killmail from esi and store it in the mongodb
+- posting kills with colors (green/red) is working again
+
 2024-04-06
 ---
 

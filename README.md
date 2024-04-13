@@ -56,7 +56,7 @@ Open your corp/char/alliance page on zkillboard and copy the number at the end o
 ### Startup (prod):
  
 - run `copy the env.sample to .env and fill out params`
-- run either `docker-compose -f ./docker-compose.prod.yaml up` or `docker-compose -f ./docker-compose.prod-noredis.yaml up`
+- run either `docker-compose -f ./docker-compose.prod.yaml up`
 - if redis is enabled you can open the dashboard at `http://localhost:4000`
 
 ### Build (prod):
@@ -71,7 +71,6 @@ Open your corp/char/alliance page on zkillboard and copy the number at the end o
 |-------------------|------------------------------------|
 | DISCORD_BOT_TOKEN | Your discord bot token             |
 | DISCORD_CLIENT_ID | Your discord application client id |
-| USE_REDIS         | (dev only) use redis + bullmq      |
 
 ## Licence 
 Copyright 2024 SvenBrnn
