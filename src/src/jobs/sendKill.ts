@@ -24,7 +24,7 @@ export async function sendKillMailToDiscord(zkillSub : ZKillSubscriber, guildId:
             const image = `https://images.evetech.net/types/${data.victim.ship_type_id}/render?size=128`;
             let title = '';
             let description = '';
-            const formatedIskValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ISK' }).format(data.zkb.destroyedValue);
+            const formatedIskValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ISK' }).format(data.zkb.totalValue);
 
             if (!data.victim.character_id) {
                 title = `${data.extendedVictim?.ship?.name} | ${data.extendedVictim?.corporation?.name} | Killmail`;

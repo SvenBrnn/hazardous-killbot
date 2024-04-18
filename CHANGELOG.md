@@ -1,3 +1,8 @@
+2024-04-18
+---
+
+- fix: show correct totalValue of kills instead of destroyedValue
+
 2024-04-13
 ---
 
