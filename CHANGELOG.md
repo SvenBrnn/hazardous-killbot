@@ -1,3 +1,8 @@
+2024-08-07
+---
+- Fix group filter for kills only (#11)
+- Fix kills beeing posted multiple times (#12)
+
 2024-04-18
 ---
 

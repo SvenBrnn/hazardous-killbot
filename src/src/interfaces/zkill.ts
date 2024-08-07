@@ -35,6 +35,7 @@ interface IZkillAttacker {
     security_status: number;
     ship_type_id: number;
     weapon_type_id: number;
+    ship?: IShips;
 }
 
 interface IZkillVictim {
