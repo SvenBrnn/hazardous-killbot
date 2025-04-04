@@ -175,34 +175,51 @@ export default async (zkillSub : ZKillSubscriber, queue : Queue, job : Job) => {
     });
 };
 
+// Global lock set to prevent race conditions
+const sendKillLocks = new Set<string>();
+
 async function sendKill(queue : Queue, guildId: string, channelId: string, subType: SubscriptionType, data: IZkill, subId?: number, messageColor: number = Colors.Grey) {
-    const cache = MemoryCache.get(`${channelId}_${data.killmail_id}_queued`);
+    const cacheKey = `${channelId}_${data.killmail_id}_queued`;
+    const cache = MemoryCache.get(cacheKey);
+
     // If already queued, do not queue the same killmail to the same channel again
     if (cache) {
         return;
     }
 
-    await queue.add(
-        'zkillboard',
-        { guildId, channelId, subType, data, subId, messageColor },
-        {
-            jobId: uuidv4(),
-            removeOnComplete: {
-                age: 300,
-            }, // Automatically remove the job after 30 seconds
-            backoff: {
-                type: 'fixed',
-                delay: 60000, // Wait 1 minute before retrying
-            },
-            attempts: 10, // Retry 10 times
-            removeOnFail: {
-                age: 86400,
-            }, // Remove after 24 hours
-        },
-    );
+    // Check if a lock exists for this key
+    if (sendKillLocks.has(cacheKey)) {
+        return; // Another process is already handling this killmail for this channel
+    }
 
-    MemoryCache.put(`${channelId}_${data.killmail_id}_queued`, 'queued', 60000); // Prevent from sending again, cache it for 1 min
-    return;
+    // Acquire the lock
+    sendKillLocks.add(cacheKey);
+
+    try {
+        await queue.add(
+            'zkillboard',
+            { guildId, channelId, subType, data, subId, messageColor },
+            {
+                jobId: uuidv4(),
+                removeOnComplete: {
+                    age: 300,
+                }, // Automatically remove the job after 30 seconds
+                backoff: {
+                    type: 'fixed',
+                    delay: 60000, // Wait 1 minute before retrying
+                },
+                attempts: 10, // Retry 10 times
+                removeOnFail: {
+                    age: 86400,
+                }, // Remove after 24 hours
+            },
+        );
+
+        MemoryCache.put(`${channelId}_${data.killmail_id}_queued`, 'queued', 60000); // Prevent from sending again, cache it for 1 min
+    } finally {
+        // Release the lock
+        sendKillLocks.delete(cacheKey);
+    }
 }
 
 async function extendZkillData(data: IZkill, extendType : ExtendType) : Promise<IZkillExtended> {
