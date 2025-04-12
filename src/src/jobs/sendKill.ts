@@ -95,7 +95,8 @@ export async function sendKillMailToDiscord(zkillSub : ZKillSubscriber, guildId:
         else {
             await zkillSub.unsubscribe(subType, guildId, channelId, subId);
         }
-    } finally {
+    }
+    finally {
         // Release the lock
         locks.delete(cacheKey);
     }

@@ -216,7 +216,8 @@ async function sendKill(queue : Queue, guildId: string, channelId: string, subTy
         );
 
         MemoryCache.put(`${channelId}_${data.killmail_id}_queued`, 'queued', 60000); // Prevent from sending again, cache it for 1 min
-    } finally {
+    }
+    finally {
         // Release the lock
         sendKillLocks.delete(cacheKey);
     }
