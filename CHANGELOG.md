@@ -1,4 +1,4 @@
-2ß25-04-19
+2025-04-19
 ---
 - update dependencies to latest versions
 - fix bug with killmails beeing sent multiple times (#12) - thanks to @metalurgus
