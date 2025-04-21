@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from '@discordjs/builders';
 import { ChatInputCommandInteraction } from 'discord.js';
 import { AbstractCommand } from './abstractCommand';
-import { LinkCommandParser } from './util/LinkCommandParser';
+import { LinkCommandParser } from './util/linkCommandParser';
 import { SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
 
 export class UnsubscribeCommand extends AbstractCommand {

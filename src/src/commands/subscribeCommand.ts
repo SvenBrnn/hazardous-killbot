@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from '@discordjs/builders';
 import { APIApplicationCommandOptionChoice, ChatInputCommandInteraction } from 'discord.js';
 import { AbstractCommand } from './abstractCommand';
-import { LinkCommandParser } from './util/LinkCommandParser';
+import { LinkCommandParser } from './util/linkCommandParser';
 import { KillType, LimitType, SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
 
 export class SubscribeCommand extends AbstractCommand {
