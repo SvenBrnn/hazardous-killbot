@@ -25,12 +25,6 @@ export class UnsubscribeCommand extends AbstractCommand {
                 interaction.reply({ content: 'We unsubscribed from zkillboard channel: link (' + type + ')', ephemeral: true });
             }
             catch (e) {
-                if (e instanceof Error) {
-                    console.error(e.stack); // Log the stack trace if it's an Error
-                }
-                else {
-                    console.error(e); // Log the raw value if it's not an Error
-                }
                 interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
                 return;
             }
