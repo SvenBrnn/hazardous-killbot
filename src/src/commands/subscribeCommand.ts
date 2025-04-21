@@ -31,7 +31,7 @@ export class SubscribeCommand extends AbstractCommand {
                     }
                     interaction.reply({ content: reply, ephemeral: true });
                 }
-                catch (e) {
+                catch {
                     interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
                     return;
                 }

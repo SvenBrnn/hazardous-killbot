@@ -24,7 +24,7 @@ export class UnsubscribeCommand extends AbstractCommand {
                 sub.unsubscribe(type, interaction.guildId, interaction.channelId, id);
                 interaction.reply({ content: 'We unsubscribed from zkillboard channel: link (' + type + ')', ephemeral: true });
             }
-            catch (e) {
+            catch {
                 interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
                 return;
             }
