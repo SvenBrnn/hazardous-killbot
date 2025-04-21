@@ -188,16 +188,16 @@ export class ZKillSubscriber {
         }
         // If unsubscribe all is triggered
         if (subType === SubscriptionType.ALL) {
-            !guild?.channels.delete(channel);
+            guild?.channels.delete(channel);
             fs.writeFileSync('./config/' + guildId + '.json', JSON.stringify(this.generateObject(guild)), 'utf8');
             return;
         }
-        const guildChannel = guild.channels.get(channel);
+        const guildChannel = guild?.channels.get(channel);
         const ident = `${subType}${id ? id : ''}`;
         if (!guildChannel?.subscriptions.has(ident)) {
             return;
         }
-        guildChannel.subscriptions.delete(ident);
+        guildChannel?.subscriptions.delete(ident);
         fs.writeFileSync('./config/' + guildId + '.json', JSON.stringify(this.generateObject(guild)), 'utf8');
     }
 

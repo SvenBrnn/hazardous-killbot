@@ -1,3 +1,8 @@
+2025-04-19
+---
+- update dependencies to latest versions
+- fix bug with killmails beeing sent multiple times (#12) - thanks to @metalurgus
+
 2024-08-07
 ---
 - Fix group filter for kills only (#11)
