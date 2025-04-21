@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from '@discordjs/builders';
 import { ChatInputCommandInteraction } from 'discord.js';
 import { AbstractCommand } from './abstractCommand';
+import { LinkCommandParser } from './util/LinkCommandParser';
 import { SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
 
 export class UnsubscribeCommand extends AbstractCommand {
@@ -13,6 +14,29 @@ export class UnsubscribeCommand extends AbstractCommand {
             return;
         }
         const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
+        if (subCommand === SubscriptionType.LINK) {
+            try {
+                const parser = LinkCommandParser.getInstance();
+                const parseResult = parser.parse(interaction);
+                const type = parseResult.type as SubscriptionType;
+                const id = parseResult.id;
+
+                sub.unsubscribe(type, interaction.guildId, interaction.channelId, id);
+                interaction.reply({ content: 'We unsubscribed from zkillboard channel: link (' + type + ')', ephemeral: true });
+            }
+            catch (e) {
+                if (e instanceof Error) {
+                    console.error(e.stack); // Log the stack trace if it's an Error
+                }
+                else {
+                    console.error(e); // Log the raw value if it's not an Error
+                }
+                interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
+                return;
+            }
+            return;
+        }
+
         const id = interaction.options.getNumber('id', false);
         sub.unsubscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined);
         interaction.reply({
@@ -95,6 +119,14 @@ export class UnsubscribeCommand extends AbstractCommand {
 
         slashCommand.addSubcommand(new SlashCommandSubcommandBuilder().setName('all')
             .setDescription('Unsubscribe everything from channel'));
+
+        slashCommand.addSubcommand(new SlashCommandSubcommandBuilder().setName('link')
+            .setDescription('Unsubscribe link from channel')
+            .addStringOption(option =>
+                option.setName('link')
+                    .setDescription('Link to zkillboard')
+                    .setRequired(true),
+            ));
 
         return slashCommand;
 

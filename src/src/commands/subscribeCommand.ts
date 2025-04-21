@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from '@discordjs/builders';
 import { APIApplicationCommandOptionChoice, ChatInputCommandInteraction } from 'discord.js';
 import { AbstractCommand } from './abstractCommand';
+import { LinkCommandParser } from './util/LinkCommandParser';
 import { KillType, LimitType, SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
 
 export class SubscribeCommand extends AbstractCommand {
@@ -13,7 +14,35 @@ export class SubscribeCommand extends AbstractCommand {
                 interaction.reply('Subscription is not possible in PM!');
                 return;
             }
+            let reply = 'We subscribed to zkillboard channel: ' + interaction.options.getSubcommand();
             const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
+            if (subCommand === SubscriptionType.LINK) {
+                try {
+                    const parser = LinkCommandParser.getInstance();
+                    const parseResult = parser.parse(interaction);
+                    const type = parseResult.type as SubscriptionType;
+                    const id = parseResult.id;
+                    const killType = parseResult.killType;
+
+                    sub.subscribe(type, interaction.guildId, interaction.channelId, id ? id : undefined, 0, LimitType.NONE, undefined, killType);
+                    reply += ' (' + type + ')';
+                    if (killType) {
+                        reply += ' Kill Type: ' + killType;
+                    }
+                    interaction.reply({ content: reply, ephemeral: true });
+                }
+                catch (e) {
+                    if (e instanceof Error) {
+                        console.error(e.stack); // Log the stack trace if it's an Error
+                    }
+                    else {
+                        console.error(e); // Log the raw value if it's not an Error
+                    }
+                    interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
+                    return;
+                }
+                return;
+            }
             const id = interaction.options.getNumber('id', false);
             const minValue = interaction.options.getNumber('min-value');
             const limitRegion = interaction.options.getString('limit-region-ids');
@@ -21,7 +50,6 @@ export class SubscribeCommand extends AbstractCommand {
             const limitSystem = interaction.options.getString('limit-system-ids');
             const killType = interaction.options.getString('type-filter') !== null ? interaction.options.getString('type-filter') as KillType : undefined;
 
-            let reply = 'We subscribed to zkillboard channel: ' + interaction.options.getSubcommand();
             let limitType: LimitType = LimitType.NONE, limitIds;
             if (limitConstellation || limitRegion || limitSystem) {
                 if (limitConstellation && limitRegion || limitConstellation && limitSystem || limitRegion && limitSystem) {
@@ -295,6 +323,14 @@ export class SubscribeCommand extends AbstractCommand {
                     .setRequired(false),
             )
             .setDescription('Subscribe public feed to channel'));
+
+        slashCommand.addSubcommand(new SlashCommandSubcommandBuilder().setName('link')
+            .addStringOption(option =>
+                option.setName('link')
+                    .setDescription('Zkillboard link to subscribe')
+                    .setRequired(true),
+            )
+            .setDescription('Subscribe zkillboard link to channel'));
 
         return slashCommand;
 
