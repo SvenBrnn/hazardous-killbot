@@ -20,7 +20,8 @@ export enum SubscriptionType {
     ALLIANCE = 'alliance',
     CHARACTER = 'character',
     GROUP = 'group',
-    SHIP = 'ship'
+    SHIP = 'ship',
+    LINK = 'link',
 }
 
 export enum LimitType {
