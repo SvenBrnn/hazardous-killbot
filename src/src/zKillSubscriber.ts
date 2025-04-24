@@ -278,6 +278,11 @@ export class ZKillSubscriber {
         return this.subscriptions.get(guildId);
     }
 
+    getChannelSubscriptions(guildId: string, channelId: string): SubscriptionChannel | undefined {
+        const guild = this.subscriptions.get(guildId);
+        return guild?.channels.get(channelId);
+    }
+
     getAllSubscriptions(): Map<string, SubscriptionGuild> {
         return this.subscriptions;
     }

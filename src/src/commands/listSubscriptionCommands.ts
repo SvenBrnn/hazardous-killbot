@@ -1,0 +1,54 @@
+import { AbstractCommand } from "./abstractCommand";
+import { KillType, LimitType, SubscriptionType, ZKillSubscriber, Subscription } from '../zKillSubscriber';
+import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from '@discordjs/builders';
+import { APIApplicationCommandOptionChoice, ChatInputCommandInteraction } from 'discord.js';
+
+export class ListSubscriptionCommands extends AbstractCommand {
+    protected override name = "list-subscription";
+
+    override executeCommand(interaction: ChatInputCommandInteraction): void {
+        const sub = ZKillSubscriber.getInstance();
+        if (!interaction.inGuild()) {
+            interaction.reply('Listing subscriptions is not possible in PM!');
+            return;
+        }
+
+        let reply = "Here are all the subscriptions in this channel:\n";
+
+        const subscriptionsInChannel = sub.getChannelSubscriptions(interaction.guildId, interaction.channelId);
+        if (subscriptionsInChannel) {
+            subscriptionsInChannel.subscriptions.forEach((subscription) => {
+                reply += subscription.toString() + "\n";
+            });
+        }
+        interaction.reply({ content: reply, ephemeral: true });
+    }
+
+    private subscriptionToString(subscription: Subscription): string {
+        const subType = subscription.subType as string
+        const limitType = subscription.limitType as string
+        const killType = subscription.killType as string | undefined
+        const minValue = subscription.minValue
+        const limitIds = subscription.limitIds
+        const id = subscription.id
+
+        let reply = 'Type: ' + subType + ' | ';
+        if (id) {
+            reply += 'ID: ' + id + ' | ';
+        }
+        if (limitType !== LimitType.NONE) { 
+            reply += 'Limit Type: ' + limitType + ' | ';
+        }
+        if (limitIds) {
+            reply += 'Limit IDs: ' + limitIds + ' | ';
+        }
+        if (killType) {
+            reply += 'Kill Type: ' + killType + ' | ';
+        }
+        if (minValue > 0) {
+            reply += 'Min Value: ' + minValue + ' | ';
+        }
+        return reply;
+
+    }
+}
