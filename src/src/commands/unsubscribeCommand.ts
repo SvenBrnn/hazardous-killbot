@@ -22,8 +22,20 @@ export class UnsubscribeCommand extends AbstractCommand {
                 const type = parseResult.type as SubscriptionType;
                 const id = parseResult.id;
 
+                let reply = 'We unsubscribed from zkillboard channel: link (' + type + ')';
+                if (id) {
+                    const nameResolver = NameResolver.getInstance();
+                    const name = await nameResolver.getName(id, type);
+                    if (name) {
+                        reply += ' ' + name;
+                    }
+                    else {
+                        reply += ' ' + id;
+                    }
+                }
+
                 sub.unsubscribe(type, interaction.guildId, interaction.channelId, id);
-                interaction.reply({ content: 'We unsubscribed from zkillboard channel: link (' + type + ')', ephemeral: true });
+                interaction.reply({ content: reply, ephemeral: true });
             }
             catch {
                 interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
