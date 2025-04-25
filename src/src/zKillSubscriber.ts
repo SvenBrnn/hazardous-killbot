@@ -230,6 +230,9 @@ export class ZKillSubscriber {
     }
 
     private loadConfig() {
+        if (!fs.existsSync('./config')) {
+            fs.mkdirSync('./config');
+        }
         const files = fs.readdirSync('./config', { withFileTypes: true });
         for (const file of files) {
             if (file.name.match(/\d+\.json$/)) {

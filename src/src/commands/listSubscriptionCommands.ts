@@ -1,10 +1,10 @@
-import { AbstractCommand } from "./abstractCommand";
-import { KillType, LimitType, SubscriptionType, ZKillSubscriber, Subscription } from '../zKillSubscriber';
-import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from '@discordjs/builders';
-import { APIApplicationCommandOptionChoice, ChatInputCommandInteraction } from 'discord.js';
+import { ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder } from '@discordjs/builders';
+import { AbstractCommand } from './abstractCommand';
+import { LimitType, ZKillSubscriber, Subscription } from '../zKillSubscriber';
 
-export class ListSubscriptionCommands extends AbstractCommand {
-    protected override name = "list-subscription";
+export class ListSubscriptionsCommand extends AbstractCommand {
+    protected override name = 'zkill-list-subscriptions';
 
     override executeCommand(interaction: ChatInputCommandInteraction): void {
         const sub = ZKillSubscriber.getInstance();
@@ -13,30 +13,30 @@ export class ListSubscriptionCommands extends AbstractCommand {
             return;
         }
 
-        let reply = "Here are all the subscriptions in this channel:\n";
+        let reply = 'Here are all the subscriptions in this channel:\n';
 
         const subscriptionsInChannel = sub.getChannelSubscriptions(interaction.guildId, interaction.channelId);
         if (subscriptionsInChannel) {
             subscriptionsInChannel.subscriptions.forEach((subscription) => {
-                reply += subscription.toString() + "\n";
+                reply += this.subscriptionToString(subscription) + '\n';
             });
         }
         interaction.reply({ content: reply, ephemeral: true });
     }
 
     private subscriptionToString(subscription: Subscription): string {
-        const subType = subscription.subType as string
-        const limitType = subscription.limitType as string
-        const killType = subscription.killType as string | undefined
-        const minValue = subscription.minValue
-        const limitIds = subscription.limitIds
-        const id = subscription.id
+        const subType = subscription.subType as string;
+        const limitType = subscription.limitType as string;
+        const killType = subscription.killType as string | undefined;
+        const minValue = subscription.minValue;
+        const limitIds = subscription.limitIds;
+        const id = subscription.id;
 
         let reply = 'Type: ' + subType + ' | ';
         if (id) {
             reply += 'ID: ' + id + ' | ';
         }
-        if (limitType !== LimitType.NONE) { 
+        if (limitType !== LimitType.NONE) {
             reply += 'Limit Type: ' + limitType + ' | ';
         }
         if (limitIds) {
@@ -49,6 +49,14 @@ export class ListSubscriptionCommands extends AbstractCommand {
             reply += 'Min Value: ' + minValue + ' | ';
         }
         return reply;
+
+    }
+
+    getCommand(): SlashCommandBuilder {
+        const slashCommand = new SlashCommandBuilder().setName(this.name)
+            .setDescription('List all active subscriptions in this channel');
+
+        return slashCommand;
 
     }
 }
