@@ -2,11 +2,12 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { AbstractCommand } from './abstractCommand';
 import { LimitType, ZKillSubscriber, Subscription } from '../zKillSubscriber';
+import { ESIData } from '../esiData';
 
 export class ListSubscriptionsCommand extends AbstractCommand {
     protected override name = 'zkill-list-subscriptions';
 
-    override executeCommand(interaction: ChatInputCommandInteraction): void {
+    override async executeCommand(interaction: ChatInputCommandInteraction): Promise<void> {
         const sub = ZKillSubscriber.getInstance();
         if (!interaction.inGuild()) {
             interaction.reply('Listing subscriptions is not possible in PM!');
@@ -17,14 +18,19 @@ export class ListSubscriptionsCommand extends AbstractCommand {
 
         const subscriptionsInChannel = sub.getChannelSubscriptions(interaction.guildId, interaction.channelId);
         if (subscriptionsInChannel) {
-            subscriptionsInChannel.subscriptions.forEach((subscription) => {
-                reply += this.subscriptionToString(subscription) + '\n';
-            });
+            const lines = await Promise.all(
+                Array.from(subscriptionsInChannel.subscriptions.values()).map(
+                    async (subscription: Subscription) => {
+                        return await this.subscriptionToString(subscription);
+                    },
+                ),
+            );
+            reply += lines.join('\n');
         }
         interaction.reply({ content: reply, ephemeral: true });
     }
 
-    private subscriptionToString(subscription: Subscription): string {
+    private async subscriptionToString(subscription: Subscription): Promise<string> {
         const subType = subscription.subType as string;
         const limitType = subscription.limitType as string;
         const killType = subscription.killType as string | undefined;
@@ -34,7 +40,14 @@ export class ListSubscriptionsCommand extends AbstractCommand {
 
         let reply = 'Type: ' + subType + ' | ';
         if (id) {
-            reply += 'ID: ' + id + ' | ';
+            const esiDate = ESIData.getInstance();
+            const name = await esiDate.getName(id, subscription.subType);
+            if (name) {
+                reply += 'Name: ' + name + ' | ';
+            }
+            else {
+                reply += 'ID: ' + id + ' | ';
+            }
         }
         if (limitType !== LimitType.NONE) {
             reply += 'Limit Type: ' + limitType + ' | ';
@@ -49,7 +62,6 @@ export class ListSubscriptionsCommand extends AbstractCommand {
             reply += 'Min Value: ' + minValue + ' | ';
         }
         return reply;
-
     }
 
     getCommand(): SlashCommandBuilder {
@@ -57,6 +69,5 @@ export class ListSubscriptionsCommand extends AbstractCommand {
             .setDescription('List all active subscriptions in this channel');
 
         return slashCommand;
-
     }
 }
