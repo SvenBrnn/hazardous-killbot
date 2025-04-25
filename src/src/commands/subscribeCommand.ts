@@ -3,11 +3,12 @@ import { APIApplicationCommandOptionChoice, ChatInputCommandInteraction } from '
 import { AbstractCommand } from './abstractCommand';
 import { LinkCommandParser } from './util/linkCommandParser';
 import { KillType, LimitType, SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
+import { NameResolver } from '../lib/nameResolver';
 
 export class SubscribeCommand extends AbstractCommand {
     protected override name = 'zkill-subscribe';
 
-    override executeCommand(interaction: ChatInputCommandInteraction): void {
+    override async executeCommand(interaction: ChatInputCommandInteraction): Promise<void> {
         try {
             const sub = ZKillSubscriber.getInstance();
             if (!interaction.inGuild()) {
@@ -73,7 +74,14 @@ export class SubscribeCommand extends AbstractCommand {
                 reply += ' Kill Type: ' + killType;
             }
             if (id) {
-                reply += ' ID: ' + id;
+                const esiDate = NameResolver.getInstance();
+                const name = await esiDate.getName(id, subCommand);
+                if (name) {
+                    reply += ' Name: ' + name;
+                }
+                else {
+                    reply += ' ID: ' + id;
+                }
             }
             if (minValue) {
                 reply += ' Min Value: ' + minValue.toLocaleString('en');

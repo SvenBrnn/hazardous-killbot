@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { AbstractCommand } from './abstractCommand';
 import { LimitType, ZKillSubscriber, Subscription } from '../zKillSubscriber';
-import { ESIData } from '../esiData';
+import { NameResolver } from '../lib/nameResolver';
 
 export class ListSubscriptionsCommand extends AbstractCommand {
     protected override name = 'zkill-list-subscriptions';
@@ -40,7 +40,7 @@ export class ListSubscriptionsCommand extends AbstractCommand {
 
         let reply = 'Type: ' + subType + ' | ';
         if (id) {
-            const esiDate = ESIData.getInstance();
+            const esiDate = NameResolver.getInstance();
             const name = await esiDate.getName(id, subscription.subType);
             if (name) {
                 reply += 'Name: ' + name + ' | ';
