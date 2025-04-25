@@ -39,7 +39,9 @@ export class ListSubscriptionsCommand extends AbstractCommand {
         const id = subscription.id;
 
         let reply = 'Type: ' + subType + ' | ';
+        let unsubCommand = `/zkill-unsubscribe ${subType}`;
         if (id) {
+            unsubCommand += ` id: ${id}`;
             const esiDate = NameResolver.getInstance();
             const name = await esiDate.getName(id, subscription.subType);
             if (name) {
@@ -61,6 +63,7 @@ export class ListSubscriptionsCommand extends AbstractCommand {
         if (minValue > 0) {
             reply += 'Min Value: ' + minValue + ' | ';
         }
+        reply += '\nUnsubscribe: ' + `\`\`\`\n${unsubCommand}\n\`\`\``;
         return reply;
     }
 

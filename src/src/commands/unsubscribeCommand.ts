@@ -3,10 +3,11 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { AbstractCommand } from './abstractCommand';
 import { LinkCommandParser } from './util/linkCommandParser';
 import { SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
+import { NameResolver } from '../lib/nameResolver';
 
 export class UnsubscribeCommand extends AbstractCommand {
     protected override name = 'zkill-unsubscribe';
-    override executeCommand(interaction: ChatInputCommandInteraction): void {
+    override async executeCommand(interaction: ChatInputCommandInteraction): Promise<void> {
         const sub = ZKillSubscriber.getInstance();
 
         if (!interaction.inGuild()) {
@@ -32,9 +33,21 @@ export class UnsubscribeCommand extends AbstractCommand {
         }
 
         const id = interaction.options.getNumber('id', false);
+
+        let reply = 'We unscubscribed to zkillboard channel: ' + interaction.options.getSubcommand();
+        if (id) {
+            const nameResolver = NameResolver.getInstance();
+            const name = await nameResolver.getName(id, subCommand);
+            if (name) {
+                reply += ' ' + name;
+            }
+            else {
+                reply += ' ' + id;
+            }
+        }
         sub.unsubscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined);
         interaction.reply({
-            content: 'We unscubscribed to zkillboard channel: ' + interaction.options.getSubcommand() + ' ' + interaction.options.getNumber('id'),
+            content:  reply,
             ephemeral: true,
         });
     }
