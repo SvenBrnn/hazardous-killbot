@@ -27,6 +27,16 @@ export class SubscribeCommand extends AbstractCommand {
 
                     sub.subscribe(type, interaction.guildId, interaction.channelId, id ? id : undefined, 0, LimitType.NONE, undefined, killType);
                     reply += ' (' + type + ')';
+                    if (id) {
+                        const nameResolver = NameResolver.getInstance();
+                        const name = await nameResolver.getName(id, type);
+                        if (name) {
+                            reply += ' Name: ' + name;
+                        }
+                        else {
+                            reply += ' ID: ' + id;
+                        }
+                    }
                     if (killType) {
                         reply += ' Kill Type: ' + killType;
                     }
@@ -74,8 +84,8 @@ export class SubscribeCommand extends AbstractCommand {
                 reply += ' Kill Type: ' + killType;
             }
             if (id) {
-                const esiDate = NameResolver.getInstance();
-                const name = await esiDate.getName(id, subCommand);
+                const nameResolver = NameResolver.getInstance();
+                const name = await nameResolver.getName(id, subCommand);
                 if (name) {
                     reply += ' Name: ' + name;
                 }

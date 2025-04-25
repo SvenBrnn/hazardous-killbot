@@ -42,8 +42,8 @@ export class ListSubscriptionsCommand extends AbstractCommand {
         let unsubCommand = `/zkill-unsubscribe ${subType}`;
         if (id) {
             unsubCommand += ` id: ${id}`;
-            const esiDate = NameResolver.getInstance();
-            const name = await esiDate.getName(id, subscription.subType);
+            const nameResolver = NameResolver.getInstance();
+            const name = await nameResolver.getName(id, subscription.subType);
             if (name) {
                 reply += 'Name: ' + name + ' | ';
             }
