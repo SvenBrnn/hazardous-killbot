@@ -83,7 +83,6 @@ export class NameResolver {
     public async getName(id: number, type: SubscriptionType): Promise<string | undefined> {
         const stringType = getSubscriptionTypeString(type);
         if (!stringType) {
-            console.log(`[NameResolver] Unknown SubscriptionType: ${type}`);
             return undefined;
         }
         const key = `${stringType}:${id}`;
@@ -95,11 +94,7 @@ export class NameResolver {
                 cache = this.caches.get(type);
             }
             if (cache && cache.has(key)) {
-                console.log(`[NameResolver] Cache hit for ${key}`);
                 return cache.get(key);
-            }
-            else {
-                console.log(`[NameResolver] Cache miss for ${key}`);
             }
         }
         try {
@@ -107,12 +102,11 @@ export class NameResolver {
             const esiName = await esiClient.getNameFromESI(id, stringType);
             if (esiName && CACHED_TYPES.has(type)) {
                 this.setName(type, key, esiName);
-                console.log(`[NameResolver] Name fetched from ESI for ${key}: ${esiName}`);
             }
             return esiName;
         }
-        catch (err) {
-            console.log(`[NameResolver] Error fetching name for ${key}:`, err);
+        catch {
+            // ignore errors
         }
         return undefined;
     }
