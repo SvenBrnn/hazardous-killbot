@@ -3,10 +3,12 @@ import * as path from 'path';
 import { EsiClient } from './esiClient';
 import { LimitType, SubscriptionType } from '../zKillSubscriber';
 
-// Add a simple logger
+const ENABLE_NAME_RESOLVER_LOG = false; // Set to true to enable logging
+
 function log(...args: any[]) {
-    // You can enhance this to use a proper logger if needed
-    console.log('[NameResolver]', ...args);
+    if (ENABLE_NAME_RESOLVER_LOG) {
+        console.log('[NameResolver]', ...args);
+    }
 }
 
 // List of types to cache
