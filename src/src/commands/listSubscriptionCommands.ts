@@ -14,7 +14,7 @@ export class ListSubscriptionsCommand extends AbstractCommand {
             return;
         }
 
-        let reply = 'Here are all the subscriptions in this channel:\n';
+        let reply = '**Here are all the subscriptions in this channel:**\n\n';
 
         const subscriptionsInChannel = sub.getChannelSubscriptions(interaction.guildId, interaction.channelId);
         if (subscriptionsInChannel) {
@@ -25,7 +25,7 @@ export class ListSubscriptionsCommand extends AbstractCommand {
                     },
                 ),
             );
-            reply += lines.join('\n');
+            reply += lines.join('\n\n');
         }
         interaction.reply({ content: reply, ephemeral: true });
     }
@@ -38,33 +38,38 @@ export class ListSubscriptionsCommand extends AbstractCommand {
         const limitIds = subscription.limitIds;
         const id = subscription.id;
 
-        let reply = 'Type: ' + subType + ' | ';
+        const lines: string[] = [];
+        lines.push(`**Type:** \`${subType}\``);
+
         let unsubCommand = `/zkill-unsubscribe ${subType}`;
         if (id) {
             unsubCommand += ` id: ${id}`;
             const nameResolver = NameResolver.getInstance();
             const name = await nameResolver.getName(id, subscription.subType);
             if (name) {
-                reply += 'Name: ' + name + ' | ';
+                lines.push(`**Name:** ${name}`);
             }
             else {
-                reply += 'ID: ' + id + ' | ';
+                lines.push(`**ID:** ${id}`);
             }
         }
+
         if (limitType !== LimitType.NONE) {
-            reply += 'Limit Type: ' + limitType + ' | ';
+            lines.push(`**Limit Type:** \`${limitType}\``);
         }
         if (limitIds) {
-            reply += 'Limit IDs: ' + limitIds + ' | ';
+            lines.push(`**Limit IDs:** \`${limitIds}\``);
         }
         if (killType) {
-            reply += 'Kill Type: ' + killType + ' | ';
+            lines.push(`**Kill Type:** \`${killType}\``);
         }
         if (minValue > 0) {
-            reply += 'Min Value: ' + minValue + ' | ';
+            lines.push(`**Min Value:** \`${minValue.toLocaleString('en')}\``);
         }
-        reply += '\nUnsubscribe: ' + `\`\`\`\n${unsubCommand}\n\`\`\``;
-        return reply;
+
+        lines.push(`**Unsubscribe:**\n\`\`\`\n${unsubCommand}\n\`\`\``);
+
+        return lines.join('\n');
     }
 
     getCommand(): SlashCommandBuilder {
