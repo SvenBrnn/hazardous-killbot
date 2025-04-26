@@ -32,7 +32,7 @@ export class ListSubscriptionsCommand extends AbstractCommand {
 
     private async subscriptionToString(subscription: Subscription): Promise<string> {
         const subType = subscription.subType as string;
-        const limitType = subscription.limitType as string;
+        const limitType = subscription.limitType;
         const killType = subscription.killType as string | undefined;
         const minValue = subscription.minValue;
         const limitIds = subscription.limitIds;
@@ -45,7 +45,7 @@ export class ListSubscriptionsCommand extends AbstractCommand {
         if (id) {
             unsubCommand += ` id: ${id}`;
             const nameResolver = NameResolver.getInstance();
-            const name = await nameResolver.getName(id, subscription.subType);
+            const name = await nameResolver.getNameBySubscriptionType(id, subscription.subType);
             if (name) {
                 lines.push(`**Name:** ${name}`);
             }
@@ -58,7 +58,9 @@ export class ListSubscriptionsCommand extends AbstractCommand {
             lines.push(`**Limit Type:** \`${limitType}\``);
         }
         if (limitIds) {
-            lines.push(`**Limit IDs:** \`${limitIds}\``);
+            const nameResolver = NameResolver.getInstance();
+            const names = await nameResolver.getNamesByLimitType(limitIds, limitType);
+            lines.push(`**Limit Names:** \`${names}\``);
         }
         if (killType) {
             lines.push(`**Kill Type:** \`${killType}\``);

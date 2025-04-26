@@ -15,7 +15,7 @@ export class SubscribeCommand extends AbstractCommand {
                 interaction.reply('Subscription is not possible in PM!');
                 return;
             }
-            let reply = 'We subscribed to zkillboard channel: ' + interaction.options.getSubcommand();
+            let reply = `**Subscribed to zkillboard channel:** \`${interaction.options.getSubcommand()}\``;
             const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
             if (subCommand === SubscriptionType.LINK) {
                 try {
@@ -26,19 +26,19 @@ export class SubscribeCommand extends AbstractCommand {
                     const killType = parseResult.killType;
 
                     sub.subscribe(type, interaction.guildId, interaction.channelId, id ? id : undefined, 0, LimitType.NONE, undefined, killType);
-                    reply += ' (' + type + ')';
+                    reply += `\n**Type:** \`${type}\``;
                     if (id) {
                         const nameResolver = NameResolver.getInstance();
-                        const name = await nameResolver.getName(id, type);
+                        const name = await nameResolver.getNameBySubscriptionType(id, type);
                         if (name) {
-                            reply += ' Name: ' + name;
+                            reply += `\n**Name:** ${name}`;
                         }
                         else {
-                            reply += ' ID: ' + id;
+                            reply += `\n**ID:** ${id}`;
                         }
                     }
                     if (killType) {
-                        reply += ' Kill Type: ' + killType;
+                        reply += `\n**Kill Type:** \`${killType}\``;
                     }
                     interaction.reply({ content: reply, ephemeral: true });
                 }
@@ -64,37 +64,42 @@ export class SubscribeCommand extends AbstractCommand {
                 if (limitRegion) {
                     limitType = LimitType.REGION;
                     limitIds = limitRegion;
-                    reply = 'Region filter: + ' + limitRegion;
                 }
                 if (limitConstellation) {
                     limitType = LimitType.CONSTELLATION;
                     limitIds = limitConstellation;
-                    reply = 'Constellation filter: + ' + limitRegion;
                 }
                 if (limitSystem) {
                     limitType = LimitType.SYSTEM;
                     limitIds = limitSystem;
-                    reply = 'System filter: + ' + limitRegion;
 
                 }
             }
             sub.subscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined, minValue ? minValue : 0, limitType, limitIds, killType);
 
+            if (limitType !== LimitType.NONE) {
+                reply += `\n**Limit Type:** \`${limitType}\``;
+            }
+            if (limitIds) {
+                const nameResolver = NameResolver.getInstance();
+                const names = await nameResolver.getNamesByLimitType(limitIds, limitType);
+                reply += `\n**Limit Names:** \`${names}\``;
+            }
             if (killType) {
-                reply += ' Kill Type: ' + killType;
+                reply += `\n**Kill Type:** \`${killType}\``;
             }
             if (id) {
                 const nameResolver = NameResolver.getInstance();
-                const name = await nameResolver.getName(id, subCommand);
+                const name = await nameResolver.getNameBySubscriptionType(id, subCommand);
                 if (name) {
-                    reply += ' Name: ' + name;
+                    reply += `\n**Name:** ${name}`;
                 }
                 else {
-                    reply += ' ID: ' + id;
+                    reply += `\n**ID:** ${id}`;
                 }
             }
             if (minValue) {
-                reply += ' Min Value: ' + minValue.toLocaleString('en');
+                reply += `\n**Min Value:** \`${minValue.toLocaleString('en')}\``;
             }
             interaction.reply({ content: reply, ephemeral: true });
         }

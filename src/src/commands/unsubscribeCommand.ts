@@ -22,15 +22,15 @@ export class UnsubscribeCommand extends AbstractCommand {
                 const type = parseResult.type as SubscriptionType;
                 const id = parseResult.id;
 
-                let reply = 'We unsubscribed from zkillboard channel: link (' + type + ')';
+                let reply = `We unsubscribed from zkillboard channel: link (\`${type}\`)`;
                 if (id) {
                     const nameResolver = NameResolver.getInstance();
-                    const name = await nameResolver.getName(id, type);
+                    const name = await nameResolver.getNameBySubscriptionType(id, type);
                     if (name) {
-                        reply += ' ' + name;
+                        reply += `\n**Name:** ${name}`;
                     }
                     else {
-                        reply += ' ' + id;
+                        reply += `\n**ID:** ${id}`;
                     }
                 }
 
@@ -46,16 +46,19 @@ export class UnsubscribeCommand extends AbstractCommand {
 
         const id = interaction.options.getNumber('id', false);
 
-        let reply = 'We unscubscribed to zkillboard channel: ' + interaction.options.getSubcommand();
+        let reply = 'We unsubscribed from zkillboard channel: ' + interaction.options.getSubcommand();
         if (id) {
             const nameResolver = NameResolver.getInstance();
-            const name = await nameResolver.getName(id, subCommand);
+            const name = await nameResolver.getNameBySubscriptionType(id, subCommand);
             if (name) {
-                reply += ' ' + name;
+                reply += `\n**Name:** ${name}`;
             }
             else {
-                reply += ' ' + id;
+                reply += `\n**ID:** ${id}`;
             }
+        }
+        else {
+            reply += '';
         }
         sub.unsubscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined);
         interaction.reply({
