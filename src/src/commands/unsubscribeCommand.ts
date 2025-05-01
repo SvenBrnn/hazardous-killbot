@@ -3,16 +3,20 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { AbstractCommand } from './abstractCommand';
 import { LinkCommandParser } from './util/linkCommandParser';
 import { SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
+import { NameResolver } from '../lib/nameResolver';
 
 export class UnsubscribeCommand extends AbstractCommand {
     protected override name = 'zkill-unsubscribe';
-    override executeCommand(interaction: ChatInputCommandInteraction): void {
+    override async executeCommand(interaction: ChatInputCommandInteraction): Promise<void> {
         const sub = ZKillSubscriber.getInstance();
 
         if (!interaction.inGuild()) {
             interaction.reply('Subscription is not possible in PM!');
             return;
         }
+
+        await interaction.deferReply({ ephemeral: true }); // Defer reply early
+
         const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
         if (subCommand === SubscriptionType.LINK) {
             try {
@@ -21,22 +25,43 @@ export class UnsubscribeCommand extends AbstractCommand {
                 const type = parseResult.type as SubscriptionType;
                 const id = parseResult.id;
 
+                let reply = `We unsubscribed from zkillboard channel: link (\`${type}\`)`;
+                if (id) {
+                    const nameResolver = NameResolver.getInstance();
+                    const name = await nameResolver.getNameBySubscriptionType(id, type);
+                    if (name) {
+                        reply += `\n**Name:** ${name}`;
+                    }
+                    else {
+                        reply += `\n**ID:** ${id}`;
+                    }
+                }
+
                 sub.unsubscribe(type, interaction.guildId, interaction.channelId, id);
-                interaction.reply({ content: 'We unsubscribed from zkillboard channel: link (' + type + ')', ephemeral: true });
+                interaction.editReply({ content: reply });
             }
             catch {
-                interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
+                interaction.editReply({ content: 'Invalid link format. Please provide a valid zKillboard link.' });
                 return;
             }
             return;
         }
 
         const id = interaction.options.getNumber('id', false);
+
+        let reply = 'We unsubscribed from zkillboard channel: ' + interaction.options.getSubcommand();
+        if (id) {
+            const nameResolver = NameResolver.getInstance();
+            const name = await nameResolver.getNameBySubscriptionType(id, subCommand);
+            if (name) {
+                reply += `\n**Name:** ${name}`;
+            }
+            else {
+                reply += `\n**ID:** ${id}`;
+            }
+        }
         sub.unsubscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined);
-        interaction.reply({
-            content: 'We unscubscribed to zkillboard channel: ' + interaction.options.getSubcommand() + ' ' + interaction.options.getNumber('id'),
-            ephemeral: true,
-        });
+        interaction.editReply({ content: reply });
     }
 
     override getCommand(): SlashCommandBuilder {
