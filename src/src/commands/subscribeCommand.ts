@@ -17,6 +17,9 @@ export class SubscribeCommand extends AbstractCommand {
             }
             let reply = `**Subscribed to zkillboard channel:** \`${interaction.options.getSubcommand()}\``;
             const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
+
+            await interaction.deferReply({ ephemeral: true });
+
             if (subCommand === SubscriptionType.LINK) {
                 try {
                     const parser = LinkCommandParser.getInstance();
@@ -40,10 +43,10 @@ export class SubscribeCommand extends AbstractCommand {
                     if (killType) {
                         reply += `\n**Kill Type:** \`${killType}\``;
                     }
-                    interaction.reply({ content: reply, ephemeral: true });
+                    interaction.editReply({ content: reply });
                 }
                 catch {
-                    interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
+                    interaction.editReply({ content: 'Invalid link format. Please provide a valid zKillboard link.' });
                     return;
                 }
                 return;
@@ -58,7 +61,7 @@ export class SubscribeCommand extends AbstractCommand {
             let limitType: LimitType = LimitType.NONE, limitIds;
             if (limitConstellation || limitRegion || limitSystem) {
                 if (limitConstellation && limitRegion || limitConstellation && limitSystem || limitRegion && limitSystem) {
-                    interaction.reply({ content: 'Only one type of limit is allowed!', ephemeral: true });
+                    interaction.editReply({ content: 'Only one type of limit is allowed!' });
                     return;
                 }
                 if (limitRegion) {
@@ -101,10 +104,16 @@ export class SubscribeCommand extends AbstractCommand {
             if (minValue) {
                 reply += `\n**Min Value:** \`${minValue.toLocaleString('en')}\``;
             }
-            interaction.reply({ content: reply, ephemeral: true });
+            interaction.editReply({ content: reply });
         }
         catch (e) {
-            interaction.reply({ content: 'Something went wrong!', ephemeral: true });
+            try {
+                interaction.editReply({ content: 'Something went wrong!' });
+            }
+            catch {
+                // If editReply fails (e.g., deferReply was not called), fall back to reply
+                interaction.reply({ content: 'Something went wrong!', ephemeral: true });
+            }
             console.log(e);
         }
     }

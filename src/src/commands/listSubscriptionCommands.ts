@@ -14,6 +14,8 @@ export class ListSubscriptionsCommand extends AbstractCommand {
             return;
         }
 
+        await interaction.deferReply({ ephemeral: true });
+
         let reply = '**Here are all the subscriptions in this channel:**\n\n';
 
         const subscriptionsInChannel = sub.getChannelSubscriptions(interaction.guildId, interaction.channelId);
@@ -27,7 +29,7 @@ export class ListSubscriptionsCommand extends AbstractCommand {
             );
             reply += lines.join('\n\n');
         }
-        interaction.reply({ content: reply, ephemeral: true });
+        interaction.editReply({ content: reply });
     }
 
     private async subscriptionToString(subscription: Subscription): Promise<string> {

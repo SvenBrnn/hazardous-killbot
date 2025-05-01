@@ -14,6 +14,9 @@ export class UnsubscribeCommand extends AbstractCommand {
             interaction.reply('Subscription is not possible in PM!');
             return;
         }
+
+        await interaction.deferReply({ ephemeral: true }); // Defer reply early
+
         const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
         if (subCommand === SubscriptionType.LINK) {
             try {
@@ -35,10 +38,10 @@ export class UnsubscribeCommand extends AbstractCommand {
                 }
 
                 sub.unsubscribe(type, interaction.guildId, interaction.channelId, id);
-                interaction.reply({ content: reply, ephemeral: true });
+                interaction.editReply({ content: reply });
             }
             catch {
-                interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
+                interaction.editReply({ content: 'Invalid link format. Please provide a valid zKillboard link.' });
                 return;
             }
             return;
@@ -57,14 +60,8 @@ export class UnsubscribeCommand extends AbstractCommand {
                 reply += `\n**ID:** ${id}`;
             }
         }
-        else {
-            reply += '';
-        }
         sub.unsubscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined);
-        interaction.reply({
-            content:  reply,
-            ephemeral: true,
-        });
+        interaction.editReply({ content: reply });
     }
 
     override getCommand(): SlashCommandBuilder {
