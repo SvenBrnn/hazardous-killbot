@@ -3,19 +3,23 @@ import { APIApplicationCommandOptionChoice, ChatInputCommandInteraction } from '
 import { AbstractCommand } from './abstractCommand';
 import { LinkCommandParser } from './util/linkCommandParser';
 import { KillType, LimitType, SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
+import { NameResolver } from '../lib/nameResolver';
 
 export class SubscribeCommand extends AbstractCommand {
     protected override name = 'zkill-subscribe';
 
-    override executeCommand(interaction: ChatInputCommandInteraction): void {
+    override async executeCommand(interaction: ChatInputCommandInteraction): Promise<void> {
         try {
             const sub = ZKillSubscriber.getInstance();
             if (!interaction.inGuild()) {
                 interaction.reply('Subscription is not possible in PM!');
                 return;
             }
-            let reply = 'We subscribed to zkillboard channel: ' + interaction.options.getSubcommand();
+            let reply = `**Subscribed to zkillboard channel:** \`${interaction.options.getSubcommand()}\``;
             const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
+
+            await interaction.deferReply({ ephemeral: true });
+
             if (subCommand === SubscriptionType.LINK) {
                 try {
                     const parser = LinkCommandParser.getInstance();
@@ -25,14 +29,24 @@ export class SubscribeCommand extends AbstractCommand {
                     const killType = parseResult.killType;
 
                     sub.subscribe(type, interaction.guildId, interaction.channelId, id ? id : undefined, 0, LimitType.NONE, undefined, killType);
-                    reply += ' (' + type + ')';
-                    if (killType) {
-                        reply += ' Kill Type: ' + killType;
+                    reply += `\n**Type:** \`${type}\``;
+                    if (id) {
+                        const nameResolver = NameResolver.getInstance();
+                        const name = await nameResolver.getNameBySubscriptionType(id, type);
+                        if (name) {
+                            reply += `\n**Name:** ${name}`;
+                        }
+                        else {
+                            reply += `\n**ID:** ${id}`;
+                        }
                     }
-                    interaction.reply({ content: reply, ephemeral: true });
+                    if (killType) {
+                        reply += `\n**Kill Type:** \`${killType}\``;
+                    }
+                    interaction.editReply({ content: reply });
                 }
                 catch {
-                    interaction.reply({ content: 'Invalid link format. Please provide a valid zKillboard link.', ephemeral: true });
+                    interaction.editReply({ content: 'Invalid link format. Please provide a valid zKillboard link.' });
                     return;
                 }
                 return;
@@ -47,41 +61,59 @@ export class SubscribeCommand extends AbstractCommand {
             let limitType: LimitType = LimitType.NONE, limitIds;
             if (limitConstellation || limitRegion || limitSystem) {
                 if (limitConstellation && limitRegion || limitConstellation && limitSystem || limitRegion && limitSystem) {
-                    interaction.reply({ content: 'Only one type of limit is allowed!', ephemeral: true });
+                    interaction.editReply({ content: 'Only one type of limit is allowed!' });
                     return;
                 }
                 if (limitRegion) {
                     limitType = LimitType.REGION;
                     limitIds = limitRegion;
-                    reply = 'Region filter: + ' + limitRegion;
                 }
                 if (limitConstellation) {
                     limitType = LimitType.CONSTELLATION;
                     limitIds = limitConstellation;
-                    reply = 'Constellation filter: + ' + limitRegion;
                 }
                 if (limitSystem) {
                     limitType = LimitType.SYSTEM;
                     limitIds = limitSystem;
-                    reply = 'System filter: + ' + limitRegion;
 
                 }
             }
             sub.subscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined, minValue ? minValue : 0, limitType, limitIds, killType);
 
+            if (limitType !== LimitType.NONE) {
+                reply += `\n**Limit Type:** \`${limitType}\``;
+            }
+            if (limitIds) {
+                const nameResolver = NameResolver.getInstance();
+                const names = await nameResolver.getNamesByLimitType(limitIds, limitType);
+                reply += `\n**Limit Names:** \`${names}\``;
+            }
             if (killType) {
-                reply += ' Kill Type: ' + killType;
+                reply += `\n**Kill Type:** \`${killType}\``;
             }
             if (id) {
-                reply += ' ID: ' + id;
+                const nameResolver = NameResolver.getInstance();
+                const name = await nameResolver.getNameBySubscriptionType(id, subCommand);
+                if (name) {
+                    reply += `\n**Name:** ${name}`;
+                }
+                else {
+                    reply += `\n**ID:** ${id}`;
+                }
             }
             if (minValue) {
-                reply += ' Min Value: ' + minValue.toLocaleString('en');
+                reply += `\n**Min Value:** \`${minValue.toLocaleString('en')}\``;
             }
-            interaction.reply({ content: reply, ephemeral: true });
+            interaction.editReply({ content: reply });
         }
         catch (e) {
-            interaction.reply({ content: 'Something went wrong!', ephemeral: true });
+            try {
+                interaction.editReply({ content: 'Something went wrong!' });
+            }
+            catch {
+                // If editReply fails (e.g., deferReply was not called), fall back to reply
+                interaction.reply({ content: 'Something went wrong!', ephemeral: true });
+            }
             console.log(e);
         }
     }

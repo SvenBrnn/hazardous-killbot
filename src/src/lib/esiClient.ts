@@ -36,11 +36,11 @@ export class EsiClient {
             });
     }
 
-    async fetch(path: string) : Promise<AxiosResponse<any, any>> {
+    async fetch(path: string): Promise<AxiosResponse<any, any>> {
         return await this.axios.get(path);
     }
 
-    async post(path: string, data: any) : Promise<AxiosResponse<any, any>> {
+    async post(path: string, data: any): Promise<AxiosResponse<any, any>> {
         return await this.axios.post(path, data);
     }
 
@@ -97,4 +97,14 @@ export class EsiClient {
         // log the missing names
         return missingNames.data;
     }
+
+    public async getNameFromESI(id: number, type: string): Promise<string | undefined> {
+        const url = `https://esi.evetech.net/latest/${type}/${id}/?datasource=tranquility`;
+        const response = await this.fetch(url);
+        if (response.data.error) {
+            throw new Error('NAME_FETCH_ERROR');
+        }
+        return response.data.name;
+    }
+
 }

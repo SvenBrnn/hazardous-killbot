@@ -4,10 +4,12 @@ import { Routes } from 'discord-api-types/v9';
 import { SubscribeCommand } from './subscribeCommand';
 import { AbstractCommand } from './abstractCommand';
 import { UnsubscribeCommand } from './unsubscribeCommand';
+import { ListSubscriptionsCommand } from './listSubscriptionCommands';
 
 const commands: AbstractCommand[] = [
     new SubscribeCommand(),
     new UnsubscribeCommand(),
+    new ListSubscriptionsCommand(),
 ];
 
 export function registerCommands(client: Client) {

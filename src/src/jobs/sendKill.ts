@@ -78,7 +78,7 @@ export async function sendKillMailToDiscord(zkillSub : ZKillSubscriber, guildId:
                     catch (e2) {
                         console.log(e2);
                     }
-                    const subscriptionsInChannel = zkillSub.getGuildSubscriptions(guildId)?.channels.get(channelId);
+                    const subscriptionsInChannel = zkillSub.getChannelSubscriptions(guildId, channelId);
                     if (subscriptionsInChannel) {
                         // Unsubscribe all events from channel
                         subscriptionsInChannel.subscriptions.forEach((subscription) => {
