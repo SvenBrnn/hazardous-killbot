@@ -94,7 +94,7 @@ export class ZKillSubscriber {
                     data,
                     {
                         jobId: 'kill-' + data.killmail_id.toString(),
-                        removeOnComplete: true,
+                        removeOnComplete: 100,
                         backoff: {
                             type: 'fixed',
                             delay: 60000, // Wait 1 minute before retrying
@@ -112,7 +112,7 @@ export class ZKillSubscriber {
                 'polling',
                 {
                     jobId: `polling-${Date.now()}`,
-                    removeOnComplete: true,
+                    removeOnComplete: 10,
                     backoff: {
                         type: 'fixed',
                         delay: 60000, // Wait 1 minute before retrying
@@ -194,7 +194,7 @@ export class ZKillSubscriber {
                     {},
                     {
                         jobId: `polling-${Date.now()}`,
-                        removeOnComplete: true,
+                        removeOnComplete: 10,
                         backoff: {
                             type: 'fixed',
                             delay: 10, // Wait 1 minute before retrying
