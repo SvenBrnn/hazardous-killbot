@@ -171,7 +171,7 @@ export class ZKillSubscriber {
         this.doClient = client;
         this.rest = new REST({ version: '9' }).setToken(process.env.DISCORD_BOT_TOKEN || '');
 
-        cron.schedule('* * * * *', () => this.checkPollingQueue);
+        cron.schedule('* * * * *', this.checkPollingQueue);
 
         // On kill signal, make sure the workers are closed properly
         process.on('SIGINT', async () => {
