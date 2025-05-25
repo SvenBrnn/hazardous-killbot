@@ -187,7 +187,7 @@ export class ZKillSubscriber {
     protected checkPollingQueue() {
         // Check if queue_polling has any jobs in running or waiting state
         this.queue_polling.getJobCounts().then((counts) => {
-            if (counts.waiting == 0 || counts.active == 0) {
+            if (counts.waiting == 0 && counts.active == 0 && counts.delayed == 0) {
                 console.log('Polling queue is empty, adding a new job.');
                 this.queue_polling.add(
                     'polling',
