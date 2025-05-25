@@ -24,6 +24,7 @@ The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/)
 | /zkill-subscribe group [id] ([min-vaue])         | Make bot post kills of ship group with id [id] ([min-value] is optional minimal amout of isk)    |
 | /zkill-subscribe ship [id] ([min-vaue])          | Make bot post kills of ship with id [id] ([min-value] is optional minimal amout of isk)          |
 | /zkill-subscribe public ([min-vaue])             | Make bot post kills the public feed ([min-value] is optional minimal amout of isk)               |
+| /zkill-subscribe link [url] ([min-vaue])         | Make bot post kills of the zkillboard link [url]                                                 |
 | /zkill-unsubscribe corporation [id]              | Make the bot not post any kills for corporation [id] anymore                                     |
 | /zkill-unsubscribe alliance [id]                 | Make the bot not post any kills for alliance [id] anymore                                        |
 | /zkill-unsubscribe corporation [id]              | Make the bot not post any kills for character [id] anymore                                       |
@@ -34,6 +35,7 @@ The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/)
 | /zkill-unsubscribe ship [id]                     | Make the bot not post any kills for ship [id] anymore                                            |
 | /zkill-unsubscribe public                        | Make the bot not post any kills of the public feed anymore                                       |
 | /zkill-unsubscribe all                           | Make the bot not post any on this channel anymore                                                |
+| /zkill-list-subscriptions                        | List all subscriptions of the channel                                                            |
 
 Where to find the id?
 ![](./docs/id.png)
@@ -67,10 +69,11 @@ Open your corp/char/alliance page on zkillboard and copy the number at the end o
 
 #### Environment
 
-| key               | description                        |
-|-------------------|------------------------------------|
-| DISCORD_BOT_TOKEN | Your discord bot token             |
-| DISCORD_CLIENT_ID | Your discord application client id |
+| key                | description                        |
+|--------------------|------------------------------------|
+| DISCORD_BOT_TOKEN  | Your discord bot token             |
+| DISCORD_CLIENT_ID  | Your discord application client id |
+| QUEUE_IDENTIFIER   | Redis queue identifier             |
 
 ## Licence 
 Copyright 2025 SvenBrnn

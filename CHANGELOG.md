@@ -1,3 +1,9 @@
+2025-05-25
+---
+- implement zkillboard polling of redisq queue instead of websocket
+- add command to subscribe using a url - thanks to @metalurgus
+- add command to list all subscriptions - thanks to @metalurgus
+
 2025-04-19
 ---
 - update dependencies to latest versions

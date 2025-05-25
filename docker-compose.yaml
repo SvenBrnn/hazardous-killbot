@@ -8,6 +8,7 @@ services:
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      QUEUE_IDENTIFIER: ${QUEUE_IDENTIFIER}
     volumes:
       - ./src:/usr/src/app:delegated
     ports:

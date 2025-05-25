@@ -5,6 +5,37 @@ import { IAlliances } from '../models/alliances';
 import { IShips } from '../models/ships';
 import { IFaction } from '../models/faction';
 
+export interface IZkillPoll {
+    killID: number;
+    killmail: IKzillPollKillmail;
+    zkb: IZkillPollZkb;
+}
+
+interface IKzillPollKillmail {
+    attackers: IZkillAttacker[];
+    killmail_id: number;
+    killmail_time: string;
+    solar_system_id: number;
+    victim: IZkillVictim;
+}
+
+interface IZkillPollZkb {
+    locationID: number;
+    hash: string;
+    fittedValue: number;
+    droppedValue: number;
+    destroyedValue: number;
+    totalValue: number;
+    points: number;
+    npc: boolean;
+    solo: boolean;
+    awox: boolean;
+    esi: string;
+    url: string;
+    labels?: string[];
+    href?: string;
+}
+
 interface IZkill {
     attackers: IZkillAttacker[];
     killmail_id: number;
@@ -67,7 +98,9 @@ interface IZkillZkb {
     solo: boolean;
     awox: boolean;
     esi: string;
+    labels?: string[];
     url: string;
+    href?: string;
 }
 
 export { IZkill, IZkillAttacker, IZkillVictim, IZkillPosition, IZkillZkb };

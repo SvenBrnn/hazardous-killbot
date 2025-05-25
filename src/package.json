@@ -13,8 +13,8 @@
     "express": "^5.1.0",
     "memory-cache": "^0.2.0",
     "mongoose": "^8.13.2",
-    "uuid": "^11.1.0",
-    "ws": "^8.18.1"
+    "node-cron": "^4.0.7",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/async-lock": "^1.4.2",

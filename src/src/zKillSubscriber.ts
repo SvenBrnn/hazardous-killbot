@@ -1,5 +1,6 @@
 import { Client } from 'discord.js';
-import { MessageEvent, WebSocket } from 'ws';
+import axios from 'axios';
+import cron from 'node-cron';
 import { REST } from '@discordjs/rest';
 import AsyncLock from 'async-lock';
 import { Queue, Worker } from 'bullmq';
@@ -7,8 +8,9 @@ import * as fs from 'fs';
 import { EsiClient } from './lib/esiClient';
 import { sendKillMailToDiscord } from './jobs/sendKill';
 import { initializeQueueDashboard } from './lib/queueDashboard';
-import { IZkill } from './interfaces/zkill';
 import processKill from './jobs/processKill';
+import { IZkillPoll } from './interfaces/zkill';
+import { transformKill } from './lib/killTransformer';
 
 export enum SubscriptionType {
     ALL = 'all',
@@ -64,6 +66,9 @@ export class ZKillSubscriber {
     protected asyncLock: AsyncLock;
     protected esiClient: EsiClient;
 
+    protected worker_polling: Worker;
+    protected queue_polling: Queue;
+
     protected worker: Worker;
     protected queue: Queue;
 
@@ -74,6 +79,57 @@ export class ZKillSubscriber {
         this.ships = new Map<number, number>();
         this.loadConfig();
         this.loadShips();
+
+        // Initialize the polling worker
+        this.worker_polling = new Worker('polling', async (job) => {
+            // Run a ajax to https://zkillredisq.stream/listen.php?queueID=${env.queue_identifier}&ttw=10 using axios
+            const response = await axios.get(`https://zkillredisq.stream/listen.php?queueID=${process.env.QUEUE_IDENTIFIER}&ttw=10`);
+            if (response.data.package) {
+                const rawData: IZkillPoll = response.data.package;
+                // Transform the data to match the expected format
+                const data = transformKill(rawData);
+                // console.log(`Added killmail ${data.killmail_id} to the queue.`); // keep for debugging
+                await this.queue.add(
+                    'process-kill',
+                    data,
+                    {
+                        jobId: 'kill-' + data.killmail_id.toString(),
+                        removeOnComplete: true,
+                        backoff: {
+                            type: 'fixed',
+                            delay: 60000, // Wait 1 minute before retrying
+                        },
+                        attempts: 10, // Retry 10 times
+                        removeOnFail: {
+                            age: 86400,
+                        }, // Remove after 24 hours
+                    },
+                );
+            }
+
+            // add a new polling job to the queue
+            await this.queue_polling.add(
+                'polling',
+                {
+                    jobId: `polling-${Date.now()}`,
+                    removeOnComplete: true,
+                    backoff: {
+                        type: 'fixed',
+                        delay: 60000, // Wait 1 minute before retrying
+                    },
+                    attempts: 10, // Retry 10 times
+                    removeOnFail: {
+                        age: 3600, // Remove after 1 hours
+                    },
+                },
+            );
+        }, {
+            connection: {
+                host: 'redis',
+                port: 6379,
+            },
+            concurrency: 1,
+        });
 
         // Initialize the worker
         this.worker = new Worker('zkillboard', async (job) => {
@@ -92,6 +148,14 @@ export class ZKillSubscriber {
             concurrency: 10,
         });
 
+        // Initialize the polling queue
+        this.queue_polling = new Queue('polling', {
+            connection: {
+                host: 'redis',
+                port: 6379,
+            },
+        });
+
         // Initialize the queue
         this.queue = new Queue('zkillboard', {
             connection: {
@@ -101,57 +165,49 @@ export class ZKillSubscriber {
         });
 
         // initialize the dashboard
-        initializeQueueDashboard(this.queue);
+        initializeQueueDashboard(this.queue, this.queue_polling);
 
 
         this.doClient = client;
         this.rest = new REST({ version: '9' }).setToken(process.env.DISCORD_BOT_TOKEN || '');
-        this.connect(this, client);
+
+        cron.schedule('* * * * *', () => this.checkPollingQueue);
+
+        // On kill signal, make sure the workers are closed properly
+        process.on('SIGINT', async () => {
+            console.log('SIGINT received, closing workers...');
+            await this.worker_polling.close();
+            await this.worker.close();
+            console.log('Workers closed.');
+            process.exit(0);
+        });
     }
 
-    private connect(sub: ZKillSubscriber, client: Client) {
-        const websocket = new WebSocket('wss://zkillboard.com/websocket/');
-        websocket.onmessage = sub.onMessage.bind(sub);
-
-        websocket.onopen = () => {
-            websocket.send(JSON.stringify({
-                'action': 'sub',
-                'channel': 'killstream',
-            }));
-        };
-        websocket.onclose = (e: any) => {
-            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-            setTimeout(function() {
-                ZKillSubscriber.getInstance(client).connect(sub, client);
-            }, 1000);
-        };
-        websocket.onerror = (error: any) => {
-            console.error('Socket encountered error: ', error.message, 'Closing socket');
-            websocket.close();
-        };
+    protected checkPollingQueue() {
+        // Check if queue_polling has any jobs in running or waiting state
+        this.queue_polling.getJobCounts().then((counts) => {
+            if (counts.waiting == 0 || counts.active == 0) {
+                console.log('Polling queue is empty, adding a new job.');
+                this.queue_polling.add(
+                    'polling',
+                    {},
+                    {
+                        jobId: `polling-${Date.now()}`,
+                        removeOnComplete: true,
+                        backoff: {
+                            type: 'fixed',
+                            delay: 10, // Wait 1 minute before retrying
+                        },
+                        attempts: 60000, // Retry 10 times
+                        removeOnFail: {
+                            age: 3600, // Remove after 1 hours
+                        },
+                    },
+                );
+            }
+        });
     }
 
-    protected async onMessage(event: MessageEvent) {
-        const data : IZkill = JSON.parse(event.data.toString());
-
-        // Add the kill to queue for processing
-        this.queue.add(
-            'process-kill',
-            data,
-            {
-                jobId: 'kill-' + data.killmail_id.toString(),
-                removeOnComplete: true,
-                backoff: {
-                    type: 'fixed',
-                    delay: 60000, // Wait 1 minute before retrying
-                },
-                attempts: 10, // Retry 10 times
-                removeOnFail: {
-                    age: 86400,
-                }, // Remove after 24 hours
-            },
-        );
-    }
     public static getInstance(client?: Client) {
         if (!this.instance && client) {
             this.instance = new ZKillSubscriber(client);
