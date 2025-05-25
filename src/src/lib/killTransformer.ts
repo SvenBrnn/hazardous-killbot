@@ -19,7 +19,8 @@ export function transformKill(kill: IZkillPoll) : IZkill {
             solo: kill.zkb.solo,
             awox: kill.zkb.awox,
             esi: kill.zkb.esi,
-            url: kill.zkb.url,
+            //  https://zkillboard.com/kill/<killmail_id>/
+            url: kill.zkb.url || `https://zkillboard.com/kill/${kill.killmail.killmail_id}/`,
             labels: kill.zkb.labels,
             href: kill.zkb.href,
         },
