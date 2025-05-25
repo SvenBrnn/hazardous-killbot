@@ -94,7 +94,7 @@ export class ZKillSubscriber {
                     data,
                     {
                         jobId: 'kill-' + data.killmail_id.toString(),
-                        removeOnComplete: 100,
+                        removeOnComplete: true,
                         backoff: {
                             type: 'fixed',
                             delay: 60000, // Wait 1 minute before retrying
@@ -110,6 +110,7 @@ export class ZKillSubscriber {
             // add a new polling job to the queue
             await this.queue_polling.add(
                 'polling',
+                {},
                 {
                     jobId: `polling-${Date.now()}`,
                     removeOnComplete: 10,
