@@ -35,6 +35,7 @@ The bot was developed by [SvenBrnn](https://zkillboard.com/character/694883910/)
 | /zkill-unsubscribe ship [id]                     | Make the bot not post any kills for ship [id] anymore                                            |
 | /zkill-unsubscribe public                        | Make the bot not post any kills of the public feed anymore                                       |
 | /zkill-unsubscribe all                           | Make the bot not post any on this channel anymore                                                |
+| /zkill-unsubscribe link [url]                    | Make the bot not post any kills for zkillboard link [url]                                        |
 | /zkill-list-subscriptions                        | List all subscriptions of the channel                                                            |
 
 Where to find the id?
