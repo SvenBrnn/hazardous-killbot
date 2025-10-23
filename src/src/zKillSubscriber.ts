@@ -87,7 +87,7 @@ export class ZKillSubscriber {
             if (response.data.package) {
                 const rawData: IZkillPoll = response.data.package;
                 // Transform the data to match the expected format
-                const data = transformKill(rawData);
+                const data = await transformKill(rawData);
                 // console.log(`Added killmail ${data.killmail_id} to the queue.`); // keep for debugging
                 await this.queue.add(
                     'process-kill',

@@ -1,6 +1,7 @@
 import { Axios, AxiosResponse } from 'axios';
 import SolarSystemSchema, { ISolarSystem } from '../models/system';
 import ShipsSchema, { IShips } from '../models/ships';
+import { IESIKillmail } from '../interfaces/zkill';
 
 const ESI_URL = 'https://esi.evetech.net/latest/';
 const GET_SOLAR_SYSTEM_URL = 'universe/systems/%1/';
@@ -8,6 +9,20 @@ const GET_CONSTELLATION_URL = 'universe/constellations/%1/';
 const GET_REGION_URL = 'universe/regions/%1/';
 const GET_TYPE_DATA_URL = '/universe/types/%1/';
 const GET_NAMES_POST_URL = '/universe/names/';
+
+const ENABLE_ESI_CLIENT_LOG = false; // Set to true to enable logging
+
+function log(...args: any[]) {
+    if (ENABLE_ESI_CLIENT_LOG) {
+        console.log('[EsiClient]', ...args);
+    }
+}
+
+function errorLog(...args: any[]) {
+    if (ENABLE_ESI_CLIENT_LOG) {
+        console.error('[EsiClient]', ...args);
+    }
+}
 
 export class EsiClient {
     private axios: Axios;
@@ -89,8 +104,8 @@ export class EsiClient {
         const missingNames = await this.post(GET_NAMES_POST_URL, JSON.stringify(missingIds));
 
         if (missingNames.data.error) {
-            console.log('MISSING_NAMES_FETCH', missingIds);
-            console.error('MISSING_NAMES_FETCH_ERROR', missingNames.data.error);
+            log('MISSING_NAMES_FETCH', missingIds);
+            errorLog('MISSING_NAMES_FETCH_ERROR', missingNames.data.error);
             throw new Error('MISSING_NAMES_FETCH_ERROR');
         }
 
@@ -99,12 +114,27 @@ export class EsiClient {
     }
 
     public async getNameFromESI(id: number, type: string): Promise<string | undefined> {
-        const url = `https://esi.evetech.net/latest/${type}/${id}/?datasource=tranquility`;
+        const url = 'https://esi.evetech.net/latest/${type}/${id}/?datasource=tranquility';
         const response = await this.fetch(url);
         if (response.data.error) {
             throw new Error('NAME_FETCH_ERROR');
         }
         return response.data.name;
+    }
+
+    public async getKillmailFromESI(killId: number, hash: string): Promise<IESIKillmail | undefined> {
+        const url = 'https://esi.evetech.net/latest/killmails/${killId}/${hash}/';
+        return this.getKillmailFromESIByUrl(url);
+    }
+
+    public async getKillmailFromESIByUrl(killmailHref: string): Promise<IESIKillmail | undefined> {
+        log('Fetching killmail from ESI for href:', killmailHref);
+        const response = await this.fetch(killmailHref);
+        log(response.data);
+        if (response.data.error) {
+            throw new Error('KILLMAIL_FETCH_ERROR');
+        }
+        return response.data as IESIKillmail;
     }
 
 }
