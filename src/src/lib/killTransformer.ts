@@ -1,12 +1,17 @@
+import { KillResolver } from './killResolver';
 import { IZkillPoll, IZkill } from '../interfaces/zkill';
 
-export function transformKill(kill: IZkillPoll) : IZkill {
+export async function transformKill(kill: IZkillPoll) : Promise<IZkill> {
+    const esiKillmail = await KillResolver.getInstance().resolveKill(kill);
+    if (!esiKillmail) {
+        throw new Error('Failed to resolve killmail from ESI');
+    }
     return {
-        attackers: kill.killmail.attackers,
-        killmail_id: kill.killmail.killmail_id,
-        killmail_time: kill.killmail.killmail_time,
-        solar_system_id: kill.killmail.solar_system_id,
-        victim: kill.killmail.victim,
+        attackers: esiKillmail.attackers,
+        killmail_id: esiKillmail.killmail_id,
+        killmail_time: esiKillmail.killmail_time,
+        solar_system_id: esiKillmail.solar_system_id,
+        victim: esiKillmail.victim,
         zkb: {
             locationID: kill.zkb.locationID,
             hash: kill.zkb.hash,
@@ -20,7 +25,7 @@ export function transformKill(kill: IZkillPoll) : IZkill {
             awox: kill.zkb.awox,
             esi: kill.zkb.esi,
             //  https://zkillboard.com/kill/<killmail_id>/
-            url: kill.zkb.url || `https://zkillboard.com/kill/${kill.killmail.killmail_id}/`,
+            url: kill.zkb.url || `https://zkillboard.com/kill/${kill.killID}/`,
             labels: kill.zkb.labels,
             href: kill.zkb.href,
         },

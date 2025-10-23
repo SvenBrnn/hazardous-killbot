@@ -5,18 +5,10 @@ import { IAlliances } from '../models/alliances';
 import { IShips } from '../models/ships';
 import { IFaction } from '../models/faction';
 
-export interface IZkillPoll {
+interface IZkillPoll {
     killID: number;
-    killmail: IKzillPollKillmail;
     zkb: IZkillPollZkb;
-}
-
-interface IKzillPollKillmail {
-    attackers: IZkillAttacker[];
-    killmail_id: number;
-    killmail_time: string;
-    solar_system_id: number;
-    victim: IZkillVictim;
+    href: string;
 }
 
 interface IZkillPollZkb {
@@ -47,7 +39,7 @@ interface IZkill {
     extendedFinalBlow?: IZkillExtended
 }
 
-export interface IZkillExtended {
+interface IZkillExtended {
     systemData: ISolarSystem;
     character?: ICharacters
     corporation?: ICorps
@@ -57,9 +49,9 @@ export interface IZkillExtended {
 }
 
 interface IZkillAttacker {
-    alliance_id: number;
-    character_id: number;
-    corporation_id: number;
+    alliance_id?: number;
+    character_id?: number;
+    corporation_id?: number;
     damage_done: number;
     faction_id: number;
     final_blow: boolean;
@@ -70,13 +62,13 @@ interface IZkillAttacker {
 }
 
 interface IZkillVictim {
-    alliance_id: number;
-    character_id: number;
-    corporation_id: number;
+    alliance_id?: number;
+    character_id?: number;
+    corporation_id?: number;
     damage_taken: number;
-    faction_id: number;
-    items: any[];
-    position: IZkillPosition;
+    faction_id?: number;
+    items?: any[];
+    position?: IZkillPosition;
     ship_type_id: number;
 }
 
@@ -103,4 +95,12 @@ interface IZkillZkb {
     href?: string;
 }
 
-export { IZkill, IZkillAttacker, IZkillVictim, IZkillPosition, IZkillZkb };
+interface IESIKillmail {
+    killmail_id: number;
+    killmail_time: string;
+    solar_system_id: number;
+    attackers: IZkillAttacker[];
+    victim: IZkillVictim;
+}
+
+export { IZkill, IZkillAttacker, IZkillVictim, IZkillPosition, IZkillZkb, IESIKillmail, IZkillExtended, IZkillPoll };
