@@ -18,7 +18,11 @@ export class SubscribeCommand extends AbstractCommand {
             let reply = `**Subscribed to zkillboard channel:** \`${interaction.options.getSubcommand()}\``;
             const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
 
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({
+                flags: [
+                    'Ephemeral',
+                ],
+            });
 
             if (subCommand === SubscriptionType.LINK) {
                 try {
@@ -112,7 +116,12 @@ export class SubscribeCommand extends AbstractCommand {
             }
             catch {
                 // If editReply fails (e.g., deferReply was not called), fall back to reply
-                interaction.reply({ content: 'Something went wrong!', ephemeral: true });
+                await interaction.reply({
+                    content: 'Something went wrong!',
+                    flags: [
+                        'Ephemeral',
+                    ],
+                });
             }
             console.log(e);
         }

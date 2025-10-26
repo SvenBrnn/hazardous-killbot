@@ -14,7 +14,11 @@ export class ListSubscriptionsCommand extends AbstractCommand {
             return;
         }
 
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({
+            flags: [
+                'Ephemeral',
+            ],
+        });
 
         let reply = '**Here are all the subscriptions in this channel:**\n\n';
 

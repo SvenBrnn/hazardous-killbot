@@ -28,7 +28,10 @@
     "eslint": "^9.38.0",
     "eslint-plugin-import": "^2.25.3",
     "nodemon": "^3.1.9",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "@eslint/compat": "^1.4.0",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.38.0"
   },
   "package": {
     "install": "package.json"

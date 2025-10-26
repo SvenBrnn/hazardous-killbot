@@ -36,7 +36,7 @@ mongoose.connect('mongodb://mongodb:27017/eve-discord-bot', {}).then(() => {
     const sub = ZKillSubscriber.getInstance(client);
 
     // When the client is ready, run this code (only once)
-    client.once('ready', () => {
+    client.once('clientReady', () => {
         console.log(`Ready on ${client.guilds.cache.size} servers!`);
     });
 

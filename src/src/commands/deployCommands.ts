@@ -47,7 +47,7 @@ export function registerCommands(client: Client) {
 
 
     // When the client is ready, run this code (only once)
-    client.once('ready', () => {
+    client.once('clientReady', () => {
         client.on('interactionCreate', interaction => {
             if (!interaction.isCommand()) return;
             for (const command of commands) {

@@ -12,7 +12,7 @@ export abstract class AbstractCommand {
         throw new Error('Not implemented yet');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     public executeCommand(interaction: CommandInteraction): void {
         throw new Error('Not implemented yet');
     }

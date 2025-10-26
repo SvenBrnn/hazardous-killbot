@@ -2,6 +2,7 @@
 ---
 - Use the kill hash to fetch killmail from esi instead of zkillboard to prevent redisq to break after update - thanks to @metalurgus
 - update all libraries to latest versions
+- migrate eslint to v9
 
 2025-05-25
 ---

@@ -15,7 +15,11 @@ export class UnsubscribeCommand extends AbstractCommand {
             return;
         }
 
-        await interaction.deferReply({ ephemeral: true }); // Defer reply early
+        await interaction.deferReply({
+            flags: [
+                'Ephemeral',
+            ],
+        });// Defer reply early
 
         const subCommand = interaction.options.getSubcommand(true) as SubscriptionType;
         if (subCommand === SubscriptionType.LINK) {
