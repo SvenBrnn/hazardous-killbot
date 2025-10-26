@@ -1,3 +1,8 @@
+2025-10-26
+---
+- Use the kill hash to fetch killmail from esi instead of zkillboard to prevent redisq to break after update - thanks to @metalurgus
+- update all libraries to latest versions
+
 2025-05-25
 ---
 - implement zkillboard polling of redisq queue instead of websocket
