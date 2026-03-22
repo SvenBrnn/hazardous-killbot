@@ -55,17 +55,17 @@ export default async (zkillSub : ZKillSubscriber, queue : Queue, job : Job) => {
                 break;
             case SubscriptionType.REGION:
                 if (data.extendedVictim.systemData.regionId === subscription.id) {
-                    await sendKill(queue, guildId, channelId, subscription.subType, data);
+                    await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id);
                 }
                 break;
             case SubscriptionType.CONSTELLATION:
                 if (data.extendedVictim.systemData.constellationId === subscription.id) {
-                    await sendKill(queue, guildId, channelId, subscription.subType, data);
+                    await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id);
                 }
                 break;
             case SubscriptionType.SYSTEM:
                 if (data.solar_system_id === subscription.id) {
-                    await sendKill(queue, guildId, channelId, subscription.subType, data);
+                    await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id);
                 }
                 break;
             case SubscriptionType.ALLIANCE:
