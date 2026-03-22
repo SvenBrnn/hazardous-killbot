@@ -22,14 +22,10 @@ export class ListSubscriptionsCommand extends AbstractCommand {
 
         let reply = '**Here are all the subscriptions in this channel:**\n\n';
 
-        const subscriptionsInChannel = sub.getChannelSubscriptions(interaction.guildId, interaction.channelId);
-        if (subscriptionsInChannel) {
+        const subscriptions = await sub.getChannelSubscriptions(interaction.guildId, interaction.channelId);
+        if (subscriptions.length > 0) {
             const lines = await Promise.all(
-                Array.from(subscriptionsInChannel.subscriptions.values()).map(
-                    async (subscription: Subscription) => {
-                        return await this.subscriptionToString(subscription);
-                    },
-                ),
+                subscriptions.map((subscription: Subscription) => this.subscriptionToString(subscription)),
             );
             reply += lines.join('\n\n');
         }

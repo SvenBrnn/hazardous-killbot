@@ -5,6 +5,7 @@ import MemoryCache from 'memory-cache';
 import { KillType, LimitType, Subscription, SubscriptionType, ZKillSubscriber } from '../zKillSubscriber';
 import { IZkill, IZkillAttacker, IZkillExtended } from '../interfaces/zkill';
 import SolarSystemSchema, { ISolarSystem } from '../models/system';
+import SubscriptionModel from '../models/subscription';
 import { EsiClient } from '../lib/esiClient';
 import ShipsSchema, { IShips } from '../models/ships';
 import CharactersSchema, { ICharacters } from '../models/characters';
@@ -24,155 +25,164 @@ export default async (zkillSub : ZKillSubscriber, queue : Queue, job : Job) => {
     data.extendedFinalBlow = await extendZkillData(data, ExtendType.FINAL_BLOW);
     data.attackers = await extendAttackersData(data);
 
-    // Throw an error if we still don't have the data extended
-    zkillSub.getAllSubscriptions().forEach((guild, guildId) => {
-        guild.channels.forEach((channel, channelId) => {
-            channel.subscriptions.forEach(async (subscription) => {
-                if (!data.extendedVictim) {
-                    throw new Error('MISSING_EXTENDED_DATA');
+    const allSubscriptions = await SubscriptionModel.find().lean();
+
+    for (const doc of allSubscriptions) {
+        const guildId = doc.guildId;
+        const channelId = doc.channelId;
+        const subscription: Subscription = {
+            subType: doc.subType as SubscriptionType,
+            id: doc.entityId,
+            minValue: doc.minValue,
+            limitType: (doc.limitType ?? 'none') as LimitType,
+            limitIds: doc.limitIds,
+            killType: doc.killType as KillType | undefined,
+        };
+
+        if (!data.extendedVictim) {
+            throw new Error('MISSING_EXTENDED_DATA');
+        }
+
+        let color: number = Colors.Green;
+        try {
+            let requireSend = false;
+            if (subscription.minValue > data.zkb.totalValue) {
+                continue;
+            }
+            switch (subscription.subType) {
+            case SubscriptionType.PUBLIC:
+                await sendKill(queue, guildId, channelId, subscription.subType, data);
+                break;
+            case SubscriptionType.REGION:
+                if (data.extendedVictim.systemData.regionId === subscription.id) {
+                    await sendKill(queue, guildId, channelId, subscription.subType, data);
                 }
-                let color: number = Colors.Green;
-                try {
-                    let requireSend = false;
-                    if (subscription.minValue > data.zkb.totalValue) {
-                        return; // Do not send if below the min value
-                    }
-                    switch (subscription.subType) {
-                    case SubscriptionType.PUBLIC:
-                        await sendKill(queue, guildId, channelId, subscription.subType, data);
-                        break;
-                    case SubscriptionType.REGION:
-                        if (data.extendedVictim.systemData.regionId === subscription.id) {
-                            await sendKill(queue, guildId, channelId, subscription.subType, data);
+                break;
+            case SubscriptionType.CONSTELLATION:
+                if (data.extendedVictim.systemData.constellationId === subscription.id) {
+                    await sendKill(queue, guildId, channelId, subscription.subType, data);
+                }
+                break;
+            case SubscriptionType.SYSTEM:
+                if (data.solar_system_id === subscription.id) {
+                    await sendKill(queue, guildId, channelId, subscription.subType, data);
+                }
+                break;
+            case SubscriptionType.ALLIANCE:
+                if (data.victim.alliance_id === subscription.id) {
+                    requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
+                    color = Colors.Red;
+                }
+                if (!requireSend) {
+                    for (const attacker of data.attackers) {
+                        if (attacker.alliance_id === subscription.id) {
+                            requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
+                            break;
                         }
-                        break;
-                    case SubscriptionType.CONSTELLATION:
-                        if (data.extendedVictim.systemData.constellationId === subscription.id) {
-                            await sendKill(queue, guildId, channelId, subscription.subType, data);
-                        }
-                        break;
-                    case SubscriptionType.SYSTEM:
-                        if (data.solar_system_id === subscription.id) {
-                            await sendKill(queue, guildId, channelId, subscription.subType, data);
-                        }
-                        break;
-                    case SubscriptionType.ALLIANCE:
-                        if (data.victim.alliance_id === subscription.id) {
-                            requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
-                            color = Colors.Red;
-                        }
-                        if (!requireSend) {
-                            for (const attacker of data.attackers) {
-                                if (attacker.alliance_id === subscription.id) {
-                                    requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
-                                    break;
-                                }
-                            }
-                        }
-                        if (requireSend) {
-                            if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
-                                return;
-                            }
-                            await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
-                        }
-                        break;
-                    case SubscriptionType.corporation:
-                        if (data.victim.corporation_id === subscription.id) {
-                            requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
-                            color = Colors.Red;
-                        }
-                        if (!requireSend) {
-                            for (const attacker of data.attackers) {
-                                if (attacker.corporation_id === subscription.id) {
-                                    requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
-                                    break;
-                                }
-                            }
-                        }
-                        if (requireSend) {
-                            if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
-                                return;
-                            }
-                            await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
-                        }
-                        break;
-                    case SubscriptionType.CHARACTER:
-                        if (data.victim.character_id === subscription.id) {
-                            requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
-                            color = Colors.Red;
-                        }
-                        if (!requireSend) {
-                            for (const attacker of data.attackers) {
-                                if (attacker.character_id === subscription.id) {
-                                    requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
-                                    break;
-                                }
-                            }
-                        }
-                        if (requireSend) {
-                            if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
-                                return;
-                            }
-                            await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
-                        }
-                        break;
-                    case SubscriptionType.GROUP:
-                        if (data.victim.ship_type_id) {
-                            if (data.extendedVictim.ship?.group === subscription.id) {
-                                requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
-                                color = Colors.Red;
-                            }
-                        }
-                        if (!requireSend) {
-                            for (const attacker of data.attackers) {
-                                if (attacker.ship_type_id) {
-                                    if (attacker.ship?.group === subscription.id) {
-                                        requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (requireSend) {
-                            if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
-                                return;
-                            }
-                            await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
-                        }
-                        break;
-                    case SubscriptionType.SHIP:
-                        if (data.victim.ship_type_id) {
-                            if (data.victim.ship_type_id === subscription.id) {
-                                requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
-                                color = Colors.Red;
-                            }
-                        }
-                        if (!requireSend) {
-                            for (const attacker of data.attackers) {
-                                if (attacker.ship_type_id) {
-                                    if (attacker.ship_type_id === subscription.id) {
-                                        requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (requireSend) {
-                            if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
-                                return;
-                            }
-                            await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
-                        }
-                        break;
-                    default:
                     }
                 }
-                catch (e) {
-                    console.log(e);
+                if (requireSend) {
+                    if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
+                        continue;
+                    }
+                    await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
                 }
-            });
-        });
-    });
+                break;
+            case SubscriptionType.corporation:
+                if (data.victim.corporation_id === subscription.id) {
+                    requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
+                    color = Colors.Red;
+                }
+                if (!requireSend) {
+                    for (const attacker of data.attackers) {
+                        if (attacker.corporation_id === subscription.id) {
+                            requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
+                            break;
+                        }
+                    }
+                }
+                if (requireSend) {
+                    if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
+                        continue;
+                    }
+                    await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
+                }
+                break;
+            case SubscriptionType.CHARACTER:
+                if (data.victim.character_id === subscription.id) {
+                    requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
+                    color = Colors.Red;
+                }
+                if (!requireSend) {
+                    for (const attacker of data.attackers) {
+                        if (attacker.character_id === subscription.id) {
+                            requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
+                            break;
+                        }
+                    }
+                }
+                if (requireSend) {
+                    if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
+                        continue;
+                    }
+                    await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
+                }
+                break;
+            case SubscriptionType.GROUP:
+                if (data.victim.ship_type_id) {
+                    if (data.extendedVictim.ship?.group === subscription.id) {
+                        requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
+                        color = Colors.Red;
+                    }
+                }
+                if (!requireSend) {
+                    for (const attacker of data.attackers) {
+                        if (attacker.ship_type_id) {
+                            if (attacker.ship?.group === subscription.id) {
+                                requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (requireSend) {
+                    if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
+                        continue;
+                    }
+                    await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
+                }
+                break;
+            case SubscriptionType.SHIP:
+                if (data.victim.ship_type_id) {
+                    if (data.victim.ship_type_id === subscription.id) {
+                        requireSend = subscription.killType === KillType.LOSSES || subscription.killType === undefined;
+                        color = Colors.Red;
+                    }
+                }
+                if (!requireSend) {
+                    for (const attacker of data.attackers) {
+                        if (attacker.ship_type_id) {
+                            if (attacker.ship_type_id === subscription.id) {
+                                requireSend = subscription.killType === KillType.KILLS || subscription.killType === undefined;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (requireSend) {
+                    if (subscription.limitType !== LimitType.NONE && !await isInLimit(subscription, data.extendedVictim.systemData)) {
+                        continue;
+                    }
+                    await sendKill(queue, guildId, channelId, subscription.subType, data, subscription.id, color);
+                }
+                break;
+            default:
+            }
+        }
+        catch (e) {
+            console.log(e);
+        }
+    }
 };
 
 // Global lock set to prevent race conditions
@@ -271,7 +281,7 @@ async function extendAttackersData(data: IZkill) : Promise<IZkillAttacker[]> {
 
 async function isInLimit(subscription: Subscription, systemData: ISolarSystem): Promise<boolean> {
     const limit = subscription.limitIds?.split(',') || [];
-    if (subscription.limitType === LimitType.SYSTEM && limit.indexOf(systemData.id.toString()) !== -1) {
+    if (subscription.limitType === LimitType.SYSTEM && limit.indexOf(systemData.eveId.toString()) !== -1) {
         return true;
     }
     if (subscription.limitType === LimitType.CONSTELLATION && limit.indexOf(systemData.constellationId.toString()) !== -1) {

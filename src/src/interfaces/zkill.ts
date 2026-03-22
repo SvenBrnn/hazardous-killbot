@@ -11,6 +11,10 @@ interface IZkillPoll {
     href: string;
 }
 
+export interface IR2Z2Sequence {
+    sequence: number;
+}
+
 interface IZkillPollZkb {
     locationID: number;
     hash: string;

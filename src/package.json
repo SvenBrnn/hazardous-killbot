@@ -4,20 +4,21 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@bull-board/api": "^6.9.2",
-    "@bull-board/express": "^6.9.2",
-    "async-lock": "^1.4.1",
-    "axios": "^1.8.4",
-    "bullmq": "^5.49.1",
-    "discord.js": "^14.18.0",
-    "express": "^5.1.0",
+    "@bull-board/api": "^6.20.6",
+    "@bull-board/express": "^6.20.6",
+    "axios": "^1.13.6",
+    "bullmq": "^5.71.0",
+    "discord.js": "^14.25.1",
+    "express": "^5.2.1",
     "memory-cache": "^0.2.0",
-    "mongoose": "^8.13.2",
+    "mongoose": "^9.3.1",
     "node-cron": "^4.0.7",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@types/async-lock": "^1.4.2",
+    "@eslint/compat": "^2.0.3",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.1",
     "@types/memory-cache": "^0.2.6",
     "@types/open-graph-scraper": "^5.2.3",
@@ -25,13 +26,10 @@
     "@types/uuid": "^11.0.0",
     "@typescript-eslint/eslint-plugin": "^8.30.1",
     "@typescript-eslint/parser": "^8.30.1",
-    "eslint": "^9.38.0",
+    "eslint": "^10.1.0",
     "eslint-plugin-import": "^2.25.3",
     "nodemon": "^3.1.9",
-    "typescript": "^5.8.3",
-    "@eslint/compat": "^1.4.0",
-    "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.38.0"
+    "typescript": "^5.8.3"
   },
   "package": {
     "install": "package.json"

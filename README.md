@@ -5,7 +5,7 @@
 
 User: Hazardous-Killbot#1916
 
-Posts EvE-Online Killmails von zkillboard.com to a discord channel using the zkillboard webhook endpoint and discord.js
+Posts EvE-Online Killmails von zkillboard.com to a discord channel using the zKillboard R2Z2 feed and discord.js
 
 [Join Our Discord for support and raffles](https://discord.gg/ACCRMvPGSf)
 
@@ -74,10 +74,11 @@ Open your corp/char/alliance page on zkillboard and copy the number at the end o
 |--------------------|------------------------------------|
 | DISCORD_BOT_TOKEN  | Your discord bot token             |
 | DISCORD_CLIENT_ID  | Your discord application client id |
-| QUEUE_IDENTIFIER   | Redis queue identifier             |
+
+The bot stores the next R2Z2 sequence to fetch in `config/sequence.json` so it can resume after restarts without re-bootstrapping from the latest global sequence.
 
 ## Licence 
-Copyright 2025 SvenBrnn
+Copyright 2026 SvenBrnn
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

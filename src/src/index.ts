@@ -18,16 +18,6 @@ if (!process.env.DISCORD_CLIENT_ID) {
     console.error('Missing DISCORD_CLIENT_ID environment variable');
     process.exit(1);
 }
-if (!process.env.QUEUE_IDENTIFIER) {
-    console.error('Missing QUEUE_IDENTIFIER environment variable');
-    process.exit(1);
-}
-
-// Check that QUEUE_IDENTIFIER is not 'example'
-if (process.env.QUEUE_IDENTIFIER === 'example') {
-    console.error('QUEUE_IDENTIFIER must be changed from default value "example" to a unique identifier for your queue.');
-    process.exit(1);
-}
 
 // Initialize Mongoose
 mongoose.connect('mongodb://mongodb:27017/eve-discord-bot', {}).then(() => {
@@ -38,9 +28,11 @@ mongoose.connect('mongodb://mongodb:27017/eve-discord-bot', {}).then(() => {
     // When the client is ready, run this code (only once)
     client.once('clientReady', () => {
         console.log(`Ready on ${client.guilds.cache.size} servers!`);
+        sub.start();
     });
 
     client.on('guildDelete', guild => {
+        if (!guild.available) return; // Guild is temporarily unavailable, not actually removed
         if (guild.name === undefined) return;
         sub.unsubscribeGuild(guild.id);
 

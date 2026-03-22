@@ -32,7 +32,7 @@ export class SubscribeCommand extends AbstractCommand {
                     const id = parseResult.id;
                     const killType = parseResult.killType;
 
-                    sub.subscribe(type, interaction.guildId, interaction.channelId, id ? id : undefined, 0, LimitType.NONE, undefined, killType);
+                    await sub.subscribe(type, interaction.guildId, interaction.channelId, id ? id : undefined, 0, LimitType.NONE, undefined, killType);
                     reply += `\n**Type:** \`${type}\``;
                     if (id) {
                         const nameResolver = NameResolver.getInstance();
@@ -82,7 +82,7 @@ export class SubscribeCommand extends AbstractCommand {
 
                 }
             }
-            sub.subscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined, minValue ? minValue : 0, limitType, limitIds, killType);
+            await sub.subscribe(subCommand, interaction.guildId, interaction.channelId, id ? id : undefined, minValue ? minValue : 0, limitType, limitIds, killType);
 
             if (limitType !== LimitType.NONE) {
                 reply += `\n**Limit Type:** \`${limitType}\``;

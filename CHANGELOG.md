@@ -1,3 +1,15 @@
+2026-03-22
+---
+- subscriptions are now stored in MongoDB instead of per-guild JSON files
+- on first start, existing JSON config files are automatically migrated to MongoDB (no manual action required)
+- kill processing now fetches subscriptions directly from MongoDB per kill instead of holding all subscriptions in memory
+- fixed bug where subscriptions could silently get lost on restart if the JSON file was written with an empty state while the bot was still running with the correct in-memory state
+- fixed pre-existing bug where async callbacks inside `forEach` were not properly awaited when processing kills — this could cause errors to be swallowed silently
+- fixed bug where sending a killmail before discord client is ready caused a unsubscribe of all subscriptions for that channel due to the client not being able to fetch the channel and thus not being able to send the killmail, which caused the bot to assume the channel was invalid and thus unsubscribing it
+- removed unused `async-lock` dependency
+- migrate from redisq zkillboard subscription to new R2Z2
+- update all dependencies to latest versions
+
 2025-10-26
 ---
 - Use the kill hash to fetch killmail from esi instead of zkillboard to prevent redisq to break after update - thanks to @metalurgus

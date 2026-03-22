@@ -70,6 +70,7 @@ export async function sendKillMailToDiscord(zkillSub : ZKillSubscriber, guildId:
             }
             catch (e) {
                 if (e instanceof DiscordAPIError && e.status === 403) {
+                    console.warn(`[sendKill] 403 Forbidden on channel ${channelId} in guild ${guildId} — bot lacks write permission. Auto-unsubscribing all subscriptions in this channel.`);
                     try {
                         const owner = await c.guild.fetchOwner();
                         await owner.send(`The bot unsubscribed from channel ${c.name} on ${c.guild.name} because it was not able to write in it! Fix the permissions and subscribe again!`);
@@ -78,12 +79,9 @@ export async function sendKillMailToDiscord(zkillSub : ZKillSubscriber, guildId:
                     catch (e2) {
                         console.log(e2);
                     }
-                    const subscriptionsInChannel = zkillSub.getChannelSubscriptions(guildId, channelId);
-                    if (subscriptionsInChannel) {
-                        // Unsubscribe all events from channel
-                        subscriptionsInChannel.subscriptions.forEach((subscription) => {
-                            zkillSub.unsubscribe(subscription.subType, guildId, channelId, subscription.id);
-                        });
+                    const subscriptionsInChannel = await zkillSub.getChannelSubscriptions(guildId, channelId);
+                    for (const subscription of subscriptionsInChannel) {
+                        await zkillSub.unsubscribe(subscription.subType, guildId, channelId, subscription.id);
                     }
                 }
                 else {
@@ -93,6 +91,7 @@ export async function sendKillMailToDiscord(zkillSub : ZKillSubscriber, guildId:
             }
         }
         else {
+            console.warn(`[sendKill] Channel ${channelId} not found in guild ${guildId} — auto-unsubscribing ${subType}.`);
             await zkillSub.unsubscribe(subType, guildId, channelId, subId);
         }
     }
