@@ -23,7 +23,11 @@ export async function sendKillMailToDiscord(zkillSub : ZKillSubscriber, guildId:
     locks.add(cacheKey);
 
     try {
-        const c = <TextChannel> await zkillSub.getDoClient().channels.cache.get(channelId);
+        let c = <TextChannel> zkillSub.getDoClient().channels.cache.get(channelId);
+        // Try fetching without cache, in case channel is not in cache (e.g. bot just started or channel was recently created)
+        if (!c) {
+            c = <TextChannel> await zkillSub.getDoClient().channels.fetch(channelId).catch(() => null);
+        }
         if (c) {
             try {
                 const content: MessageCreateOptions = {};
