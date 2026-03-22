@@ -25,7 +25,7 @@ export async function transformKill(kill: IZkillPoll) : Promise<IZkill> {
             awox: kill.zkb.awox,
             esi: kill.zkb.esi,
             //  https://zkillboard.com/kill/<killmail_id>/
-            url: kill.zkb.url || `https://zkillboard.com/kill/${kill.killID}/`,
+            url: `https://zkillboard.com/kill/${esiKillmail.killmail_id}/`,
             labels: kill.zkb.labels,
             href: kill.zkb.href,
         },
