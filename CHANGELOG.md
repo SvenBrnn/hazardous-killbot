@@ -2,6 +2,7 @@
 ---
 - kill processing now runs in its own dedicated queue with a concurrency of 1, ensuring only one kill is ever being processed at a time and avoiding race conditions on shared character/corporation/ship/system lookups
 - the bot now requires a `CONTACT_EMAIL` environment variable and sends it as part of the User-Agent header on requests to ESI and zKillboard (R2Z2), as recommended by their API guidelines - the bot will not start if this is not set
+- R2Z2 polling is now a single perpetual job that re-delays itself instead of spawning a new job per sequence, guaranteeing only one polling job can ever exist, and is additionally rate-limited to 10 requests/second to stay safely under zKillboard's 15 requests/second block threshold
 
 2026-03-22
 ---

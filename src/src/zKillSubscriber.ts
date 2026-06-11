@@ -1,7 +1,7 @@
 import { Client } from 'discord.js';
 import axios from 'axios';
 import cron from 'node-cron';
-import { Queue, Worker } from 'bullmq';
+import { DelayedError, Queue, Worker } from 'bullmq';
 import * as fs from 'fs';
 import * as path from 'path';
 import { sendKillMailToDiscord } from './jobs/sendKill';
@@ -46,10 +46,6 @@ export interface Subscription {
     limitType: LimitType
     limitIds?: string
     killType?: KillType
-}
-
-interface PollingJobData {
-    sequence?: number
 }
 
 const R2Z2_EPHEMERAL_BASE_URL = 'https://r2z2.zkillboard.com/ephemeral';
@@ -107,16 +103,16 @@ export class ZKillSubscriber {
             process.exit(0);
         });
 
-        // Initialize the polling worker
-        this.worker_polling = new Worker('polling', async (job) => {
-            const pollingJobData = job.data as PollingJobData;
-            let currentSequence: number | undefined = pollingJobData.sequence;
-            let nextSequence: number | undefined = pollingJobData.sequence;
+        // Initialize the polling worker — a single perpetual job (fixed jobId
+        // 'polling') that re-delays itself forever via moveToDelayed, so only
+        // one polling job can ever exist. The rate limiter additionally caps
+        // requests well under R2Z2's 15 req/s block threshold.
+        this.worker_polling = new Worker('polling', async (job, token) => {
+            let currentSequence: number | undefined;
             let nextDelay: number;
 
             try {
-                currentSequence = await this.resolvePollingSequence(pollingJobData);
-                nextSequence = currentSequence;
+                currentSequence = await this.resolvePollingSequence();
 
                 const response = await axios.get<IZkillPoll>(`${R2Z2_EPHEMERAL_BASE_URL}/${currentSequence}.json`, {
                     validateStatus: () => true,
@@ -146,8 +142,7 @@ export class ZKillSubscriber {
                         console.warn(`Process queue job for R2Z2 sequence ${currentSequence} already exists, advancing to the next sequence.`);
                     }
 
-                    nextSequence = currentSequence + 1;
-                    await this.savePollingSequence(nextSequence);
+                    await this.savePollingSequence(currentSequence + 1);
                     nextDelay = POLLING_SUCCESS_DELAY_MS;
                 }
                 else if (response.status === 404) {
@@ -167,10 +162,12 @@ export class ZKillSubscriber {
                 nextDelay = POLLING_ERROR_DELAY_MS;
             }
 
-            await this.schedulePollingJob(nextSequence, nextDelay);
+            await job.moveToDelayed(Date.now() + nextDelay, token);
+            throw new DelayedError();
         }, {
             connection: { host: 'redis', port: 6379 },
             concurrency: 1,
+            limiter: { max: 10, duration: 1000 },
         });
 
         // Initialize the send worker
@@ -200,22 +197,26 @@ export class ZKillSubscriber {
     }
 
     protected checkPollingQueue() {
-        // Check if queue_polling has any jobs in running or waiting state
-        this.queue_polling?.getJobCounts().then((counts) => {
-            if (counts.waiting == 0 && counts.active == 0 && counts.delayed == 0) {
-                console.log('Polling queue is empty, adding a new job.');
-                this.schedulePollingJob(undefined, 10).catch((error) => {
-                    console.error('Failed to schedule polling job:', error);
-                });
+        // The polling job has a fixed jobId, so at most one can ever exist.
+        // Recreate it if missing (first start, or fully removed), and revive
+        // it if it ever ended up failed (only possible if an unexpected error
+        // escaped the moveToDelayed/DelayedError re-delay below).
+        this.queue_polling?.getJob('polling').then(async (job) => {
+            if (!job) {
+                console.log('Polling job missing, scheduling a new one.');
+                await this.schedulePollingJob();
+                return;
             }
+            if (await job.getState() === 'failed') {
+                console.warn('Polling job had failed, retrying.');
+                await job.retry();
+            }
+        }).catch((error) => {
+            console.error('Failed to check polling queue:', error);
         });
     }
 
-    protected async resolvePollingSequence(jobData?: PollingJobData): Promise<number> {
-        if (jobData?.sequence && Number.isInteger(jobData.sequence) && jobData.sequence > 0) {
-            return jobData.sequence;
-        }
-
+    protected async resolvePollingSequence(): Promise<number> {
         const savedSequence = await this.loadPollingSequence();
         if (savedSequence) {
             return savedSequence;
@@ -267,14 +268,13 @@ export class ZKillSubscriber {
         }
     }
 
-    protected async schedulePollingJob(sequence?: number, delay: number = 0) {
+    protected async schedulePollingJob(delay: number = 0) {
         await this.queue_polling?.add(
             'polling',
-            sequence ? { sequence } : {},
+            {},
             {
-                jobId: `polling-${sequence ?? 'bootstrap'}-${Date.now()}`,
+                jobId: 'polling',
                 delay,
-                removeOnComplete: 10,
                 attempts: 1,
                 removeOnFail: {
                     age: 3600,
