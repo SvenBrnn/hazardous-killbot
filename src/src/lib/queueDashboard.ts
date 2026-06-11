@@ -4,12 +4,12 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { createBullBoard } from '@bull-board/api';
 import express from 'express';
 
-export async function initializeQueueDashboard(queue: Queue, queue_polling: Queue) {
+export async function initializeQueueDashboard(queue: Queue, queue_polling: Queue, queue_processKill: Queue) {
     const serverAdapter = new ExpressAdapter();
     serverAdapter.setBasePath('/');
 
     createBullBoard({
-        queues: [new BullMQAdapter(queue), new BullMQAdapter(queue_polling)],
+        queues: [new BullMQAdapter(queue), new BullMQAdapter(queue_polling), new BullMQAdapter(queue_processKill)],
         serverAdapter: serverAdapter,
     });
 

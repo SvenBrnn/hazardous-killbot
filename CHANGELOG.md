@@ -1,3 +1,8 @@
+2026-06-11
+---
+- kill processing now runs in its own dedicated queue with a concurrency of 1, ensuring only one kill is ever being processed at a time and avoiding race conditions on shared character/corporation/ship/system lookups
+- the bot now requires a `CONTACT_EMAIL` environment variable and sends it as part of the User-Agent header on requests to ESI and zKillboard (R2Z2), as recommended by their API guidelines - the bot will not start if this is not set
+
 2026-03-22
 ---
 - subscriptions are now stored in MongoDB instead of per-guild JSON files

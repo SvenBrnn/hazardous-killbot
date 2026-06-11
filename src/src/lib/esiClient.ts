@@ -1,4 +1,5 @@
 import { Axios, AxiosResponse } from 'axios';
+import { getUserAgent } from './userAgent';
 import SolarSystemSchema, { ISolarSystem } from '../models/system';
 import ShipsSchema, { IShips } from '../models/ships';
 import { IESIKillmail } from '../interfaces/zkill';
@@ -39,7 +40,7 @@ export class EsiClient {
         this.axios = new Axios(
             {
                 headers: {
-                    'User-Agent': 'EVE-Discord-Bot',
+                    'User-Agent': getUserAgent(),
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },

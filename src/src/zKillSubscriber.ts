@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { sendKillMailToDiscord } from './jobs/sendKill';
 import { initializeQueueDashboard } from './lib/queueDashboard';
+import { getUserAgent } from './lib/userAgent';
 import processKill from './jobs/processKill';
 import { IR2Z2Sequence, IZkillPoll } from './interfaces/zkill';
 import { transformKill } from './lib/killTransformer';
@@ -53,9 +54,9 @@ interface PollingJobData {
 
 const R2Z2_EPHEMERAL_BASE_URL = 'https://r2z2.zkillboard.com/ephemeral';
 const R2Z2_SEQUENCE_URL = `${R2Z2_EPHEMERAL_BASE_URL}/sequence.json`;
-const POLLING_SUCCESS_DELAY_MS = 100;
-const POLLING_EMPTY_DELAY_MS = 6000;
-const POLLING_ERROR_DELAY_MS = 6000;
+const POLLING_SUCCESS_DELAY_MS = 200;
+const POLLING_EMPTY_DELAY_MS = 10000;
+const POLLING_ERROR_DELAY_MS = 10000;
 const SEQUENCE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export class ZKillSubscriber {
@@ -68,6 +69,9 @@ export class ZKillSubscriber {
 
     protected worker: Worker | undefined;
     protected queue?: Queue;
+
+    protected worker_processKill: Worker | undefined;
+    protected queue_processKill?: Queue;
 
     protected constructor(client: Client) {
         this.migrateFromJsonFiles().catch(console.error);
@@ -86,14 +90,19 @@ export class ZKillSubscriber {
             connection: { host: 'redis', port: 6379 },
         });
 
+        this.queue_processKill = new Queue('process-kill', {
+            connection: { host: 'redis', port: 6379 },
+        });
+
         // initialize the dashboard
-        initializeQueueDashboard(this.queue, this.queue_polling);
+        initializeQueueDashboard(this.queue, this.queue_polling, this.queue_processKill);
 
         // On kill signal, make sure the workers are closed properly
         process.on('SIGINT', async () => {
             console.log('SIGINT received, closing workers...');
             await this.worker_polling?.close();
             await this.worker?.close();
+            await this.worker_processKill?.close();
             console.log('Workers closed.');
             process.exit(0);
         });
@@ -111,16 +120,17 @@ export class ZKillSubscriber {
 
                 const response = await axios.get<IZkillPoll>(`${R2Z2_EPHEMERAL_BASE_URL}/${currentSequence}.json`, {
                     validateStatus: () => true,
+                    headers: { 'User-Agent': getUserAgent() },
                 });
 
                 if (response.status === 200 && response.data) {
                     const rawData: IZkillPoll = response.data;
                     const data = await transformKill(rawData);
                     const processKillJobId = 'kill-sequence-' + currentSequence.toString();
-                    const existingProcessKillJob = await this.queue?.getJob(processKillJobId);
+                    const existingProcessKillJob = await this.queue_processKill?.getJob(processKillJobId);
 
                     if (!existingProcessKillJob) {
-                        await this.queue?.add(
+                        await this.queue_processKill?.add(
                             'process-kill',
                             data,
                             {
@@ -163,18 +173,25 @@ export class ZKillSubscriber {
             concurrency: 1,
         });
 
-        // Initialize the send/process worker
+        // Initialize the send worker
         this.worker = new Worker('zkillboard', async (job) => {
             const data = job.data;
-            if (job.name === 'process-kill' && this.queue) {
-                await processKill(this, this.queue, job);
-            }
-            else {
-                await sendKillMailToDiscord(this, data.guildId, data.channelId, data.subType, data.data, data.subId, data.messageColor);
-            }
+            await sendKillMailToDiscord(this, data.guildId, data.channelId, data.subType, data.data, data.subId, data.messageColor);
         }, {
             connection: { host: 'redis', port: 6379 },
             concurrency: 10,
+        });
+
+        // Initialize the process-kill worker — concurrency 1 ensures kills are
+        // processed strictly one at a time, avoiding races in the shared
+        // character/corporation/ship/system lookups.
+        this.worker_processKill = new Worker('process-kill', async (job) => {
+            if (this.queue) {
+                await processKill(this, this.queue, job);
+            }
+        }, {
+            connection: { host: 'redis', port: 6379 },
+            concurrency: 1,
         });
 
         // Start the polling cron and immediately check the queue
@@ -210,7 +227,9 @@ export class ZKillSubscriber {
     }
 
     protected async fetchLatestSequence(): Promise<number> {
-        const response = await axios.get<IR2Z2Sequence>(R2Z2_SEQUENCE_URL);
+        const response = await axios.get<IR2Z2Sequence>(R2Z2_SEQUENCE_URL, {
+            headers: { 'User-Agent': getUserAgent() },
+        });
         if (!response.data || !Number.isInteger(response.data.sequence) || response.data.sequence <= 0) {
             throw new Error('INVALID_R2Z2_SEQUENCE_RESPONSE');
         }

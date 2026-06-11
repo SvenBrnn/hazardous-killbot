@@ -18,6 +18,10 @@ if (!process.env.DISCORD_CLIENT_ID) {
     console.error('Missing DISCORD_CLIENT_ID environment variable');
     process.exit(1);
 }
+if (!process.env.CONTACT_EMAIL) {
+    console.error('Missing CONTACT_EMAIL environment variable');
+    process.exit(1);
+}
 
 // Initialize Mongoose
 mongoose.connect('mongodb://mongodb:27017/eve-discord-bot', {}).then(() => {
